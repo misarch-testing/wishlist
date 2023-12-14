@@ -30,6 +30,11 @@ impl Book {
     async fn author_id(&self) -> usize {
         self.author_id
     }
+
+    async fn author<'a>(&self, ctx: &Context<'a>) -> &'a Author {
+        let library = ctx.data_unchecked::<Library>();
+        library.authors.get(self.author_id).unwrap()
+    }
 }
 
 #[Object]
@@ -40,6 +45,11 @@ impl Author {
 
     async fn name(&self) -> &str {
         self.name
+    }
+
+    async fn books<'a>(&self, ctx: &Context<'a>) -> Vec<&'a Book> {
+        let library = ctx.data_unchecked::<Library>();
+        library.books.iter().filter(|b| b.author_id == self.id).collect()
     }
 }
 
