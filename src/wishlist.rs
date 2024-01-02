@@ -3,31 +3,31 @@ use async_graphql::Object;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Wishlist<'a> {
-    pub id: &'a str,
-    pub user_id: &'a str,
-    pub product_variant_ids: Vec<&'a str>,
-    pub name: &'a str,
+pub struct Wishlist {
+    pub id: String,
+    pub user_id: String,
+    pub product_variant_ids: Vec<String>,
+    pub name: String,
     pub created_at: OffsetDateTime,
     pub last_updated_at: OffsetDateTime,
 }
 
 #[Object]
-impl<'a> Wishlist<'a> {
-    async fn id(&self) -> &str {
-        self.id
+impl Wishlist {
+    async fn id(&self) -> String {
+        self.id.clone()
     }
 
-    async fn user_id(&self) -> &str {
-        self.user_id
+    async fn user_id(&self) -> String {
+        self.user_id.clone()
     }
 
-    async fn product_variant_ids(&self) -> Vec<&str> {
+    async fn product_variant_ids(&self) -> Vec<String> {
         self.product_variant_ids.clone()
     }
 
-    async fn name(&self) -> &str {
-        self.name
+    async fn name(&self) -> String {
+        self.name.clone()
     }
 
     async fn created_at(&self) -> String {

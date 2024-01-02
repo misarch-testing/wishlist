@@ -40,10 +40,10 @@ async fn main() {
 
     // Dummy data to insert
     let wishlists: Vec<Wishlist> = vec![Wishlist {
-        id: &Uuid::new_v4().as_hyphenated().to_string(),
-        user_id: &Uuid::new_v4().as_hyphenated().to_string(),
+        id: Uuid::new_v4().as_hyphenated().to_string(),
+        user_id: Uuid::new_v4().as_hyphenated().to_string(),
         product_variant_ids: vec![],
-        name: "test",
+        name: String::from("test"),
         created_at: datetime!(2019-01-01 0:00 UTC),
         last_updated_at: datetime!(2019-01-01 0:00 UTC),
     }];
