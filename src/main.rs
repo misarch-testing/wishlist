@@ -1,4 +1,4 @@
-use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription, Schema};
+use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
@@ -14,6 +14,9 @@ use wishlist::Wishlist;
 
 mod query_root;
 use query_root::QueryRoot;
+
+mod mutation_root;
+use mutation_root::MutationRoot;
 
 async fn graphiql() -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint("/").finish())
@@ -49,7 +52,7 @@ async fn main() {
     }];
     collection.insert_many(wishlists, None).await.unwrap();
 
-    let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
+    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(collection)
         .finish();
 
