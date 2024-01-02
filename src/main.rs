@@ -39,15 +39,15 @@ async fn main() {
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
 
     // Dummy data to insert
-    // let wishlists: Vec<Wishlist> = vec![Wishlist {
-    //     id: Uuid::new_v4(),
-    //     user_id: Uuid::new_v4(),
-    //     product_variant_ids: vec![],
-    //     name: "test".to_string(),
-    //     created_at: datetime!(2019-01-01 0:00),
-    //     last_updated_at: datetime!(2019-01-01 0:00),
-    // }];
-    // collection.insert_many(wishlists, None).await.unwrap();
+    let wishlists: Vec<Wishlist> = vec![Wishlist {
+        id: &Uuid::new_v4().as_hyphenated().to_string(),
+        user_id: &Uuid::new_v4().as_hyphenated().to_string(),
+        product_variant_ids: vec![],
+        name: "test",
+        created_at: datetime!(2019-01-01 0:00 UTC),
+        last_updated_at: datetime!(2019-01-01 0:00 UTC),
+    }];
+    collection.insert_many(wishlists, None).await.unwrap();
 
     let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
         .data(collection)

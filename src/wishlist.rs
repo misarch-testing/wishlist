@@ -1,43 +1,40 @@
-use uuid::Uuid;
-use time::{PrimitiveDateTime, macros::format_description};
+use time::{OffsetDateTime, format_description::well_known::Iso8601};
 use async_graphql::Object;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Wishlist {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub product_variant_ids: Vec<Uuid>,
-    pub name: String,
-    pub created_at: PrimitiveDateTime,
-    pub last_updated_at: PrimitiveDateTime,
+pub struct Wishlist<'a> {
+    pub id: &'a str,
+    pub user_id: &'a str,
+    pub product_variant_ids: Vec<&'a str>,
+    pub name: &'a str,
+    pub created_at: OffsetDateTime,
+    pub last_updated_at: OffsetDateTime,
 }
 
 #[Object]
-impl Wishlist {
-    async fn id(&self) -> String {
-        self.id.as_hyphenated().to_string()
+impl<'a> Wishlist<'a> {
+    async fn id(&self) -> &str {
+        self.id
     }
 
-    async fn user_id(&self) -> String {
-        self.user_id.as_hyphenated().to_string()
+    async fn user_id(&self) -> &str {
+        self.user_id
     }
 
-    async fn product_variant_ids(&self) -> Vec<String> {
-        self.product_variant_ids.iter().map(|uuid| uuid.as_hyphenated().to_string()).collect()
+    async fn product_variant_ids(&self) -> Vec<&str> {
+        self.product_variant_ids.clone()
     }
 
-    async fn name(&self) -> String {
-        self.name.to_string()
+    async fn name(&self) -> &str {
+        self.name
     }
 
     async fn created_at(&self) -> String {
-        let format = format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
-        self.created_at.format(&format).unwrap()
+        self.created_at.format(&Iso8601::DEFAULT).unwrap()
     }
 
     async fn last_updated_at(&self) -> String {
-        let format = format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
-        self.last_updated_at.format(&format).unwrap()
+        self.last_updated_at.format(&Iso8601::DEFAULT).unwrap()
     }
 }
