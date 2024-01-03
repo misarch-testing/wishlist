@@ -1,4 +1,4 @@
-use async_graphql::{Object, Context};
+use async_graphql::{Object, Context, Error, FieldResult};
 use mongodb::{Collection, bson::doc};
 use uuid::Uuid;
 use crate::Wishlist;
@@ -8,21 +8,47 @@ pub struct QueryRoot;
 
 #[Object]
 impl QueryRoot {
-    async fn wishlists<'a>(&self, ctx: &Context<'a>) -> Vec<Wishlist> {
+    /// Retrieves all wishlists.
+    async fn wishlists<'a>(&self, ctx: &Context<'a>) -> FieldResult<Vec<Wishlist>> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let mut cursor = collection.find(None, None).await.unwrap();
         let mut wishlists = vec![];
-        while let Some(wishlist) = cursor.try_next().await.unwrap() {
-            wishlists.push(wishlist);
+        loop {
+            match cursor.try_next().await {
+                Ok(maybe_wishlist) => match maybe_wishlist {
+                    Some(wishlist) => wishlists.push(wishlist),
+                    None => break
+                },
+                Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB."))
+            }
         }
-        wishlists
+        Ok(wishlists)
     }
 
-    async fn wishlist<'a>(&self, ctx: &Context<'a>, id: String) -> Wishlist {
+    /// Retrieves wishlists of specific id.
+    async fn wishlist<'a>(&self, ctx: &Context<'a>, id: String) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
-        let parsed_uuid = Uuid::parse_str(&id).unwrap();
-        let wishlist = collection.find_one(doc!{"id": parsed_uuid.as_hyphenated().to_string() }, None).await.unwrap().unwrap();
-        wishlist
+        match Uuid::parse_str(&id) {
+            Ok(parsed_uuid) => {
+                match collection.find_one(doc!{"id": parsed_uuid.as_hyphenated().to_string() }, None).await {
+                    Ok(maybe_wishlist) => match maybe_wishlist {
+                        Some(wishlist) => Ok(wishlist),
+                        None => {
+                            let message = format!("Wishlist with UUID id: `{id}` not found.");
+                            Err(Error::new(message))
+                        }
+                    },
+                    Err(_) => {
+                        let message = format!("Wishlist with UUID id: `{id}` not found.");
+                        Err(Error::new(message))
+                    }
+                }
+            },
+            Err(_) => {
+                let message = format!("UUID id: `{id}` is not a valid UUID.");
+                Err(Error::new(message))
+            }
+        }
     }
 }
 

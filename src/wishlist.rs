@@ -1,4 +1,4 @@
-use time::{OffsetDateTime, format_description::well_known::Iso8601};
+use mongodb::bson::DateTime;
 use async_graphql::Object;
 use serde::{Serialize, Deserialize};
 
@@ -8,8 +8,8 @@ pub struct Wishlist {
     pub user_id: String,
     pub product_variant_ids: Vec<String>,
     pub name: String,
-    pub created_at: OffsetDateTime,
-    pub last_updated_at: OffsetDateTime,
+    pub created_at: DateTime,
+    pub last_updated_at: DateTime,
 }
 
 #[Object]
@@ -31,10 +31,10 @@ impl Wishlist {
     }
 
     async fn created_at(&self) -> String {
-        self.created_at.format(&Iso8601::DEFAULT).unwrap()
+        self.created_at.try_to_rfc3339_string().unwrap()
     }
 
     async fn last_updated_at(&self) -> String {
-        self.last_updated_at.format(&Iso8601::DEFAULT).unwrap()
+        self.last_updated_at.try_to_rfc3339_string().unwrap()
     }
 }
