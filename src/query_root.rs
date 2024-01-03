@@ -25,7 +25,7 @@ impl QueryRoot {
         Ok(wishlists)
     }
 
-    /// Retrieves wishlists of specific id.
+    /// Retrieves wishlist of specific id.
     async fn wishlist<'a>(&self, ctx: &Context<'a>, id: String) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         match Uuid::parse_str(&id) {
