@@ -12,7 +12,7 @@
     pub struct Wishlist {
         pub id: String,
         pub user_id: String,
-        pub product_variant_ids: Vec<String>,
+        pub product_variant_ids: HashSet<String>,
         pub name: String,
         pub created_at: DateTime,
         pub last_updated_at: DateTime,

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
 use async_graphql_axum::GraphQL;
 use axum::{
@@ -38,7 +40,7 @@ async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
         id: Uuid::new_v4().as_hyphenated().to_string(),
         user_id: Uuid::new_v4().as_hyphenated().to_string(),
-        product_variant_ids: vec![],
+        product_variant_ids: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),
         last_updated_at: DateTime::now(),

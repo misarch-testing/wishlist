@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use mongodb::bson::DateTime;
 use async_graphql::Object;
 use serde::{Serialize, Deserialize};
@@ -6,7 +8,7 @@ use serde::{Serialize, Deserialize};
 pub struct Wishlist {
     pub id: String,
     pub user_id: String,
-    pub product_variant_ids: Vec<String>,
+    pub product_variant_ids: HashSet<String>,
     pub name: String,
     pub created_at: DateTime,
     pub last_updated_at: DateTime,
@@ -22,7 +24,7 @@ impl Wishlist {
         self.user_id.clone()
     }
 
-    async fn product_variant_ids(&self) -> Vec<String> {
+    async fn product_variant_ids(&self) -> HashSet<String> {
         self.product_variant_ids.clone()
     }
 
