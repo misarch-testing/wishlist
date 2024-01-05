@@ -19,6 +19,8 @@ use query_root::QueryRoot;
 mod mutation_root;
 use mutation_root::MutationRoot;
 
+mod input_structs;
+
 async fn graphiql() -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint("/").finish())
 }

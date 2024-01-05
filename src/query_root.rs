@@ -1,4 +1,4 @@
-use async_graphql::{Object, Context, Error, FieldResult};
+use async_graphql::{Object, Context, Error, FieldResult, ID};
 use mongodb::{Collection, bson::doc};
 use uuid::Uuid;
 use crate::Wishlist;
@@ -26,26 +26,21 @@ impl QueryRoot {
     }
 
     /// Retrieves wishlist of specific id.
-    async fn wishlist<'a>(&self, ctx: &Context<'a>, id: String) -> FieldResult<Wishlist> {
+    async fn wishlist<'a>(&self, ctx: &Context<'a>,
+        #[graphql(desc = "UUID of wishlist.")] id: Uuid
+    ) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
-        match Uuid::parse_str(&id) {
-            Ok(parsed_uuid) => {
-                match collection.find_one(doc!{"id": parsed_uuid.as_hyphenated().to_string() }, None).await {
-                    Ok(maybe_wishlist) => match maybe_wishlist {
-                        Some(wishlist) => Ok(wishlist),
-                        None => {
-                            let message = format!("Wishlist with UUID id: `{id}` not found.");
-                            Err(Error::new(message))
-                        }
-                    },
-                    Err(_) => {
-                        let message = format!("Wishlist with UUID id: `{id}` not found.");
-                        Err(Error::new(message))
-                    }
+        let stringified_uuid = id.as_hyphenated().to_string();
+        match collection.find_one(doc!{"id": id.as_hyphenated().to_string() }, None).await {
+            Ok(maybe_wishlist) => match maybe_wishlist {
+                Some(wishlist) => Ok(wishlist),
+                None => {
+                    let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
+                    Err(Error::new(message))
                 }
             },
             Err(_) => {
-                let message = format!("UUID id: `{id}` is not a valid UUID.");
+                let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
                 Err(Error::new(message))
             }
         }
