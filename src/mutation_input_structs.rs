@@ -6,7 +6,7 @@ use uuid::Uuid;
 pub struct AddWishlistInput {
     /// UUID of user owning the wishlist.
     pub user_id: Uuid,
-    /// UUIDs of product variant versions in wishlist.
+    /// UUIDs of product variants in wishlist.
     pub product_variant_ids: HashSet<Uuid>,
     /// Wishlist name.
     pub name: String,
@@ -16,7 +16,7 @@ pub struct AddWishlistInput {
 pub struct UpdateWishlistInput {
     /// UUID of wishlist to update.
     pub id: Uuid,
-    /// product variant version UUIDs of wishlist to update
+    /// product variant UUIDs of wishlist to update
     pub product_variant_ids: Option<HashSet<Uuid>>,
     /// Wishlist name to update
     pub name: Option<String>,

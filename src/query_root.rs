@@ -55,22 +55,32 @@ impl QueryRoot {
     ) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();
-        match collection
-            .find_one(doc! {"_id": id.as_hyphenated().to_string() }, None)
-            .await
-        {
-            Ok(maybe_wishlist) => match maybe_wishlist {
-                Some(wishlist) => Ok(wishlist),
-                None => {
-                    let message =
-                        format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
-                    Err(Error::new(message))
-                }
-            },
-            Err(_) => {
+        query_wishlist(&collection, &stringified_uuid).await
+    }
+}
+
+/// Shared function to query a wishlist from a MongoDB collection of wishlists
+///
+/// * `connection` - MongoDB database connection.
+/// * `stringified_uuid` - UUID of wishlist as String.
+pub async fn query_wishlist(
+    collection: &Collection<Wishlist>,
+    stringified_uuid: &String,
+) -> FieldResult<Wishlist> {
+    match collection
+        .find_one(doc! {"_id": &stringified_uuid }, None)
+        .await
+    {
+        Ok(maybe_wishlist) => match maybe_wishlist {
+            Some(wishlist) => Ok(wishlist),
+            None => {
                 let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
                 Err(Error::new(message))
             }
+        },
+        Err(_) => {
+            let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
+            Err(Error::new(message))
         }
     }
 }
