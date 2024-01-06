@@ -7,7 +7,7 @@ use axum::{
     routing::get,
     Router, Server,
 };
-use mongodb::{Client, options::ClientOptions, bson::DateTime, Collection, Database};
+use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 use uuid::Uuid;
 
 mod wishlist;
@@ -19,8 +19,10 @@ use query_root::QueryRoot;
 mod mutation_root;
 use mutation_root::MutationRoot;
 
-mod input_structs;
+mod mutation_input_structs;
+mod order_datatypes;
 
+/// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint("/").finish())
 }
@@ -33,14 +35,14 @@ async fn db_connection() -> Client {
     // Manually set an option.
     client_options.app_name = Some("My App".to_string());
 
-    // Get a handle to the deployment
+    // Get a handle to the deployment.
     Client::with_options(client_options).unwrap()
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
-        id: Uuid::new_v4().as_hyphenated().to_string(),
+        _id: Uuid::new_v4().as_hyphenated().to_string(),
         user_id: Uuid::new_v4().as_hyphenated().to_string(),
         product_variant_ids: HashSet::new(),
         name: String::from("test"),
@@ -53,10 +55,10 @@ async fn insert_dummy_data(collection: &Collection<Wishlist>) {
 #[tokio::main]
 async fn main() {
     let client = db_connection().await;
-
     let db: Database = client.database("wishlist-database");
-    
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
+
+    insert_dummy_data(&collection).await;
 
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(collection)

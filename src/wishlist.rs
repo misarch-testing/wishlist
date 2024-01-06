@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
-use bson::datetime::DateTime;
 use async_graphql::SimpleObject;
-use serde::{Serialize, Deserialize};
+use bson::datetime::DateTime;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, SimpleObject)]
 pub struct Wishlist {
-    pub id: String,
+    pub _id: String,
     pub user_id: String,
     pub product_variant_ids: HashSet<String>,
     pub name: String,
