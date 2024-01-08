@@ -65,9 +65,9 @@ async fn main() {
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://localhost:8000");
+    println!("GraphiQL IDE: http://0.0.0.0:8000");
 
-    Server::bind(&"127.0.0.1:8000".parse().unwrap())
+    Server::bind(&"0.0.0.0:8000".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
