@@ -5,13 +5,12 @@ use mongodb::{bson::doc, options::FindOptions, Collection};
 use uuid::Uuid;
 
 /// Describes GraphQL wishlist queries.
-pub struct QueryRoot;
+pub struct Query;
 
 #[Object]
-impl QueryRoot {
+impl Query {
     /// Retrieves all wishlists.
     ///
-    /// * `ctx` - GraphQL context containing DB connection.
     /// * `first` - Describes that the `first` N wishlists should be retrieved.
     /// * `skip` - Describes how many wishlists should be skipped at the beginning.
     /// * `order_by` - Specifies the order in which wishlists are retrieved.
@@ -24,7 +23,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wishlist>> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let wishlist_order = order_by.unwrap_or_default();
-        let sorting_doc = doc! {wishlist_order.order_field.unwrap_or_default().as_str(): i32::from(wishlist_order.order_direction.unwrap_or_default())};
+        let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
         let find_options = FindOptions::builder()
             .skip(skip)
             .limit(first.map(|v| i64::from(v)))
@@ -46,7 +45,6 @@ impl QueryRoot {
 
     /// Retrieves wishlist of specific id.
     ///
-    /// * `ctx` - GraphQL context containing DB connection.
     /// * `id` - UUID of wishlist to retrieve.
     async fn wishlist<'a>(
         &self,

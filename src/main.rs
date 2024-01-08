@@ -13,11 +13,11 @@ use uuid::Uuid;
 mod wishlist;
 use wishlist::Wishlist;
 
-mod query_root;
-use query_root::QueryRoot;
+mod query;
+use query::Query;
 
-mod mutation_root;
-use mutation_root::MutationRoot;
+mod mutation;
+use mutation::Mutation;
 
 mod mutation_input_structs;
 mod order_datatypes;
@@ -58,9 +58,7 @@ async fn main() {
     let db: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
 
-    insert_dummy_data(&collection).await;
-
-    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+    let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
         .finish();
 

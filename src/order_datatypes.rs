@@ -3,7 +3,9 @@ use async_graphql::{Enum, InputObject, SimpleObject};
 /// GraphQL order direction.
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
 pub enum OrderDirection {
+    /// Ascending order direction.
     Asc,
+    /// Descending order direction.
     Desc,
 }
 
@@ -26,10 +28,15 @@ impl From<OrderDirection> for i32 {
 /// Describes the fields that a wishlist can be ordered by.
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
 pub enum WishlistOrderField {
+    /// Orders by "id".
     Id,
+    /// Orders by "user_id".
     UserId,
+    /// Orders by "name".
     Name,
+    /// Orders by "created_at".
     CreatedAt,
+    /// Orders by "last_updated_at".
     LastUpdatedAt,
 }
 
@@ -51,17 +58,20 @@ impl Default for WishlistOrderField {
     }
 }
 
+/// Specifies the order of wishlists.
 #[derive(SimpleObject, InputObject)]
 pub struct WishlistOrder {
-    pub order_direction: Option<OrderDirection>,
-    pub order_field: Option<WishlistOrderField>,
+    /// Order direction of wishlists.
+    pub direction: Option<OrderDirection>,
+    /// Field that wishlists should be ordered by.
+    pub field: Option<WishlistOrderField>,
 }
 
 impl Default for WishlistOrder {
     fn default() -> Self {
         Self {
-            order_direction: Some(Default::default()),
-            order_field: Some(Default::default()),
+            direction: Some(Default::default()),
+            field: Some(Default::default()),
         }
     }
 }
