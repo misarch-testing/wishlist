@@ -1,0 +1,27 @@
+name: Update GraphQL schema
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  schema:
+    name: Update GraphQL schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Save graphql schemas
+        run: |
+          cargo run -- --generate-schema
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          path: ./schemas
+          commit-message: Update wishlist schema
+          branch: update/wishlist
+          token: ${{ secrets.SCHEMAS_PUSH_SECRET }}

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fs::File, io::Write};
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
 use async_graphql_axum::GraphQL;
@@ -7,6 +7,7 @@ use axum::{
     routing::get,
     Router, Server,
 };
+use clap::{arg, command, Parser};
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 use uuid::Uuid;
 
@@ -52,8 +53,32 @@ async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     collection.insert_many(wishlists, None).await.unwrap();
 }
 
+/// Command line argument to toggle schema generation instead of service execution.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Generates GraphQL schema in `./schemas/wishlist.graphql`.
+    #[arg(long)]
+    generate_schema: bool,
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
+    let args = Args::parse();
+    if args.generate_schema {
+        let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish();
+        let mut file = File::create("./schemas/wishlist.graphql")?;
+        let schema_sdl = schema.sdl();
+        file.write_all(schema_sdl.as_bytes())?;
+        println!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
+    } else {
+        start_service().await;
+    }
+    Ok(())
+}
+
+/// Starts wishlist service on port 8000.
+async fn start_service() {
     let client = db_connection().await;
     let db: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
