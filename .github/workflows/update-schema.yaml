@@ -16,6 +16,10 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+      - uses: actions/checkout@v4
+        with:
+          repository: "misarch/schemas"
+          path: "schemas"
       - name: Save graphql schemas
         run: |
           cargo run -- --generate-schema
