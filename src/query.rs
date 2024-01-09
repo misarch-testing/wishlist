@@ -1,6 +1,6 @@
 use crate::{
     order_datatypes::WishlistOrder,
-    wishlist_connection::{FindResultWishlist, TotalCount},
+    wishlist_connection::{FindResultWrapper, AdditionalFields},
     Wishlist,
 };
 use async_graphql::{connection::Connection, Context, Error, FieldResult, Object};
@@ -25,7 +25,7 @@ impl Query {
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
             WishlistOrder,
         >,
-    ) -> FieldResult<Connection<Uuid, Wishlist, TotalCount>> {
+    ) -> FieldResult<Connection<Uuid, Wishlist, AdditionalFields>> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let wishlist_order = order_by.unwrap_or_default();
         let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
@@ -41,8 +41,9 @@ impl Query {
                 .await;
         match maybe_find_results {
             Ok(find_results) => {
-                let connection = Into::<Connection<Uuid, Wishlist, TotalCount>>::into(
-                    FindResultWishlist(find_results),
+                let find_result_wrapper = FindResultWrapper(find_results);
+                let connection = Into::<Connection<Uuid, Wishlist, AdditionalFields>>::into(
+                    find_result_wrapper,
                 );
                 Ok(connection)
             }

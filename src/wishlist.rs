@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use async_graphql::{
     connection::{Edge, EmptyFields},
-    SimpleObject,
+    SimpleObject, OutputType,
 };
 use bson::datetime::DateTime;
 use serde::{Deserialize, Serialize};
@@ -18,10 +18,20 @@ pub struct Wishlist {
     pub last_updated_at: DateTime,
 }
 
-/// Implementation of conversion from Wishlist to GraphQL edge.
-impl From<Wishlist> for Edge<Uuid, Wishlist, EmptyFields> {
+impl From<Wishlist> for Uuid {
     fn from(value: Wishlist) -> Self {
-        let uuid = Uuid::parse_str(&value._id).unwrap();
-        Edge::new(uuid, value)
+        Uuid::parse_str(&value._id).unwrap()
+    }
+}
+
+pub struct NodeWrapper<Node>(pub Node);
+
+impl<Node> From<NodeWrapper<Node>> for Edge<Uuid, Node, EmptyFields>
+where
+    Node: Into<Uuid> + OutputType + Clone,
+{
+    fn from(value: NodeWrapper<Node>) -> Self {
+        let uuid = Into::<Uuid>::into(value.0.clone());
+        Edge::new(uuid, value.0)
     }
 }
