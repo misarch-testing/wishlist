@@ -23,6 +23,8 @@ use mutation::Mutation;
 mod mutation_input_structs;
 mod order_datatypes;
 
+//mod wishlist_connection;
+
 /// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {
     response::Html(GraphiQLSource::build().endpoint("/").finish())
@@ -66,7 +68,7 @@ struct Args {
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
     if args.generate_schema {
-        let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish();
+        let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
         let mut file = File::create("./schemas/wishlist.graphql")?;
         let schema_sdl = schema.sdl();
         file.write_all(schema_sdl.as_bytes())?;
