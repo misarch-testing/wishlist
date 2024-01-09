@@ -8,8 +8,6 @@ use bson::datetime::DateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::base_connection::BaseConnection;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
 pub struct Wishlist {
     pub _id: String,
@@ -37,5 +35,3 @@ where
         Edge::new(uuid, value.0)
     }
 }
-
-pub type WishlistConnection = BaseConnection<Wishlist>;

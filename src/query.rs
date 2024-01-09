@@ -1,6 +1,6 @@
 use crate::{
     order_datatypes::WishlistOrder,
-    Wishlist, wishlist::WishlistConnection, base_connection::FindResultWrapper,
+    Wishlist, base_connection::{FindResultWrapper, BaseConnection}, wishlist_connection::WishlistConnection,
 };
 use async_graphql::{Context, Error, FieldResult, Object};
 use bson::Document;
@@ -42,8 +42,8 @@ impl Query {
             Ok(find_results) => {
                 let find_result_wrapper = FindResultWrapper(find_results);
                 let connection =
-                    Into::<WishlistConnection>::into(find_result_wrapper);
-                Ok(connection)
+                    Into::<BaseConnection<Wishlist>>::into(find_result_wrapper);
+                Ok(Into::<WishlistConnection>::into(connection))
             }
             Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB.")),
         }

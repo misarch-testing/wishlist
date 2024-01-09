@@ -1,10 +1,14 @@
 use async_graphql::{OutputType, SimpleObject};
 
+/// A base connection for an OutputType.
 #[derive(SimpleObject)]
 pub struct BaseConnection<T: OutputType> {
-    nodes: Vec<T>,
-    has_next_page: bool,
-    total_count: u64,
+    /// The resulting entities.
+    pub nodes: Vec<T>,
+    /// Whether this connection has a next page.
+    pub has_next_page: bool,
+    /// The total amount of items in this connection.
+    pub total_count: u64,
 }
 
 use mongodb_cursor_pagination::FindResult;

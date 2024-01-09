@@ -24,6 +24,7 @@ mod mutation_input_structs;
 mod order_datatypes;
 
 mod base_connection;
+mod wishlist_connection;
 
 /// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {
