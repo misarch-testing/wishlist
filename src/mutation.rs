@@ -10,25 +10,22 @@ use uuid::Uuid;
 
 use crate::{
     mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
-    query_root::query_wishlist,
+    query::query_wishlist,
     wishlist::Wishlist,
 };
 
 /// Describes GraphQL wishlist mutations.
-pub struct MutationRoot;
+pub struct Mutation;
 
 #[Object]
-impl MutationRoot {
+impl Mutation {
     /// Adds a wishlist with a user_id, a list of product_variant_ids and a name.
-    ///
-    /// * `ctx` - GraphQL context containing DB connection.
-    /// * `input` - `AddWishlistInput`.
     ///
     /// Formats UUIDs as hyphenated lowercase Strings.
     async fn add_wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        input: AddWishlistInput,
+        #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
     ) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let normalized_product_variant_ids: HashSet<String> = input
@@ -57,14 +54,11 @@ impl MutationRoot {
 
     /// Updates name and/or product_variant_ids of a specific wishlist referenced with an id.
     ///
-    /// * `ctx` - GraphQL context containing DB connection.
-    /// * `input` - `UpdateWishlistInput`.
-    ///
     /// Formats UUIDs as hyphenated lowercase Strings.
     async fn update_wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        input: UpdateWishlistInput,
+        #[graphql(desc = "UpdateWishlistInput")] input: UpdateWishlistInput,
     ) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = input.id.as_hyphenated().to_string();
@@ -77,9 +71,6 @@ impl MutationRoot {
     }
 
     /// Deletes wishlist of id.
-    ///
-    /// * `ctx` - GraphQL context containing DB connection.
-    /// * `id` - UUID of wishlist to delete.
     async fn delete_wishlist<'a>(
         &self,
         ctx: &Context<'a>,

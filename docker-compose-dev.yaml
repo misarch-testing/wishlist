@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: devcontainer-dockerfile
+      dockerfile: dev-dockerfile
     depends_on:
       - db
     ports:

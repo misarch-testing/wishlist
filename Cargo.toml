@@ -1,5 +1,5 @@
 [package]
-name = "rust-graphql-demo"
+name = "misarch-wishlist"
 version = "0.1.0"
 edition = "2021"
 
@@ -18,3 +18,4 @@ futures = "0.3.30"
 bson = "2.8.1"
 clap = { version = "4.4.13", features = ["derive"] }
 uuid = { version = "1.6.1", features = ["v4", "serde"] }
+mongodb-cursor-pagination = "0.3.2"

@@ -14,14 +14,17 @@ use uuid::Uuid;
 mod wishlist;
 use wishlist::Wishlist;
 
-mod query_root;
-use query_root::QueryRoot;
+mod query;
+use query::Query;
 
-mod mutation_root;
-use mutation_root::MutationRoot;
+mod mutation;
+use mutation::Mutation;
 
 mod mutation_input_structs;
 mod order_datatypes;
+
+mod base_connection;
+mod wishlist_connection;
 
 /// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {
@@ -66,7 +69,7 @@ struct Args {
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
     if args.generate_schema {
-        let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish();
+        let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
         let mut file = File::create("./schemas/wishlist.graphql")?;
         let schema_sdl = schema.sdl();
         file.write_all(schema_sdl.as_bytes())?;
@@ -83,16 +86,14 @@ async fn start_service() {
     let db: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
 
-    insert_dummy_data(&collection).await;
-
-    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+    let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://localhost:8000");
+    println!("GraphiQL IDE: http://0.0.0.0:8000");
 
-    Server::bind(&"127.0.0.1:8000".parse().unwrap())
+    Server::bind(&"0.0.0.0:8000".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();

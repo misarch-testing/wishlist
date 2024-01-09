@@ -1,57 +1,59 @@
-use crate::{order_datatypes::WishlistOrder, Wishlist};
+use crate::{
+    order_datatypes::WishlistOrder,
+    Wishlist, base_connection::{FindResultWrapper, BaseConnection}, wishlist_connection::WishlistConnection,
+};
 use async_graphql::{Context, Error, FieldResult, Object};
-use futures::stream::TryStreamExt;
+use bson::Document;
 use mongodb::{bson::doc, options::FindOptions, Collection};
+use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
 use uuid::Uuid;
 
 /// Describes GraphQL wishlist queries.
-pub struct QueryRoot;
+pub struct Query;
 
 #[Object]
-impl QueryRoot {
+impl Query {
     /// Retrieves all wishlists.
-    ///
-    /// * `ctx` - GraphQL context containing DB connection.
-    /// * `first` - Describes that the `first` N wishlists should be retrieved.
-    /// * `skip` - Describes how many wishlists should be skipped at the beginning.
-    /// * `order_by` - Specifies the order in which wishlists are retrieved.
     async fn wishlists<'a>(
         &self,
         ctx: &Context<'a>,
+        #[graphql(desc = "Describes that the `first` N wishlists should be retrieved.")]
         first: Option<u32>,
+        #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
         skip: Option<u64>,
-        order_by: Option<WishlistOrder>,
-    ) -> FieldResult<Vec<Wishlist>> {
+        #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
+            WishlistOrder,
+        >,
+    ) -> FieldResult<WishlistConnection> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let wishlist_order = order_by.unwrap_or_default();
-        let sorting_doc = doc! {wishlist_order.order_field.unwrap_or_default().as_str(): i32::from(wishlist_order.order_direction.unwrap_or_default())};
+        let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
         let find_options = FindOptions::builder()
             .skip(skip)
             .limit(first.map(|v| i64::from(v)))
             .sort(sorting_doc)
             .build();
-        let mut cursor = collection.find(None, find_options).await.unwrap();
-        let mut wishlists = vec![];
-        loop {
-            match cursor.try_next().await {
-                Ok(maybe_wishlist) => match maybe_wishlist {
-                    Some(wishlist) => wishlists.push(wishlist),
-                    None => break,
-                },
-                Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB.")),
+        let document_collection = collection.clone_with_type::<Document>();
+        let maybe_find_results: Result<FindResult<Wishlist>, CursorError> =
+            PaginatedCursor::new(Some(find_options.clone()), None, None)
+                .find(&document_collection, None)
+                .await;
+        match maybe_find_results {
+            Ok(find_results) => {
+                let find_result_wrapper = FindResultWrapper(find_results);
+                let connection =
+                    Into::<BaseConnection<Wishlist>>::into(find_result_wrapper);
+                Ok(Into::<WishlistConnection>::into(connection))
             }
+            Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB.")),
         }
-        Ok(wishlists)
     }
 
     /// Retrieves wishlist of specific id.
-    ///
-    /// * `ctx` - GraphQL context containing DB connection.
-    /// * `id` - UUID of wishlist to retrieve.
     async fn wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        #[graphql(desc = "UUID of wishlist.")] id: Uuid,
+        #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> FieldResult<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();
