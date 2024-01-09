@@ -23,7 +23,7 @@ use mutation::Mutation;
 mod mutation_input_structs;
 mod order_datatypes;
 
-//mod wishlist_connection;
+mod wishlist_connection;
 
 /// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {

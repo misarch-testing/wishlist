@@ -8,7 +8,7 @@ use bson::datetime::DateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, Clone, SimpleObject)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
 pub struct Wishlist {
     pub _id: String,
     pub user_id: String,
@@ -18,6 +18,7 @@ pub struct Wishlist {
     pub last_updated_at: DateTime,
 }
 
+/// Implementation of conversion from Wishlist to GraphQL edge.
 impl From<Wishlist> for Edge<Uuid, Wishlist, EmptyFields> {
     fn from(value: Wishlist) -> Self {
         let uuid = Uuid::parse_str(&value._id).unwrap();
