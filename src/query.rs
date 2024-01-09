@@ -1,9 +1,8 @@
 use crate::{
     order_datatypes::WishlistOrder,
-    wishlist_connection::{FindResultWrapper, AdditionalFields},
-    Wishlist,
+    Wishlist, wishlist::WishlistConnection, base_connection::FindResultWrapper,
 };
-use async_graphql::{connection::Connection, Context, Error, FieldResult, Object};
+use async_graphql::{Context, Error, FieldResult, Object};
 use bson::Document;
 use mongodb::{bson::doc, options::FindOptions, Collection};
 use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
@@ -25,7 +24,7 @@ impl Query {
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
             WishlistOrder,
         >,
-    ) -> FieldResult<Connection<Uuid, Wishlist, AdditionalFields>> {
+    ) -> FieldResult<WishlistConnection> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let wishlist_order = order_by.unwrap_or_default();
         let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
@@ -42,9 +41,8 @@ impl Query {
         match maybe_find_results {
             Ok(find_results) => {
                 let find_result_wrapper = FindResultWrapper(find_results);
-                let connection = Into::<Connection<Uuid, Wishlist, AdditionalFields>>::into(
-                    find_result_wrapper,
-                );
+                let connection =
+                    Into::<WishlistConnection>::into(find_result_wrapper);
                 Ok(connection)
             }
             Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB.")),
