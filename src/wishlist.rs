@@ -8,7 +8,7 @@ use bson::datetime::DateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    custom_uuid::Uuid,
+    custom_uuid::CustomUuid,
     foreign_types::{ProductVariant, User},
 };
 
@@ -16,7 +16,7 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
 pub struct Wishlist {
     /// Wishlist UUID.
-    pub _id: Uuid,
+    pub _id: CustomUuid,
     /// User.
     pub user: User,
     /// Product variants in Wishlist.
@@ -29,7 +29,7 @@ pub struct Wishlist {
     pub last_updated_at: DateTime,
 }
 
-impl From<Wishlist> for Uuid {
+impl From<Wishlist> for CustomUuid {
     fn from(value: Wishlist) -> Self {
         value._id
     }
@@ -37,12 +37,12 @@ impl From<Wishlist> for Uuid {
 
 pub struct NodeWrapper<Node>(pub Node);
 
-impl<Node> From<NodeWrapper<Node>> for Edge<Uuid, Node, EmptyFields>
+impl<Node> From<NodeWrapper<Node>> for Edge<CustomUuid, Node, EmptyFields>
 where
-    Node: Into<Uuid> + OutputType + Clone,
+    Node: Into<CustomUuid> + OutputType + Clone,
 {
     fn from(value: NodeWrapper<Node>) -> Self {
-        let uuid = Into::<Uuid>::into(value.0.clone());
+        let uuid = Into::<CustomUuid>::into(value.0.clone());
         Edge::new(uuid, value.0)
     }
 }

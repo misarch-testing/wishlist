@@ -4,11 +4,11 @@ use async_graphql::{connection::CursorType, SimpleObject, InputObject};
 use serde::{de, Deserialize, Serialize};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, SimpleObject, InputObject)]
-pub struct Uuid {
+pub struct CustomUuid {
     value: uuid::Uuid,
 }
 
-impl Uuid {
+impl CustomUuid {
     pub fn new_v4() -> Self {
         Self {
             value: uuid::Uuid::new_v4(),
@@ -16,7 +16,7 @@ impl Uuid {
     }
 }
 
-impl Deref for Uuid {
+impl Deref for CustomUuid {
     type Target = uuid::Uuid;
 
     fn deref(&self) -> &Self::Target {
@@ -24,7 +24,7 @@ impl Deref for Uuid {
     }
 }
 
-impl FromStr for Uuid {
+impl FromStr for CustomUuid {
     type Err = uuid::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -36,7 +36,7 @@ impl FromStr for Uuid {
 struct UuidVisitor;
 
 impl<'de> de::Visitor<'de> for UuidVisitor {
-    type Value = Uuid;
+    type Value = CustomUuid;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("A valid human-readable UUID.")
@@ -47,7 +47,7 @@ impl<'de> de::Visitor<'de> for UuidVisitor {
     }
 }
 
-impl Serialize for Uuid {
+impl Serialize for CustomUuid {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -56,7 +56,7 @@ impl Serialize for Uuid {
     }
 }
 
-impl<'de> Deserialize<'de> for Uuid {
+impl<'de> Deserialize<'de> for CustomUuid {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -65,12 +65,12 @@ impl<'de> Deserialize<'de> for Uuid {
     }
 }
 
-impl CursorType for Uuid {
+impl CursorType for CustomUuid {
     type Error = uuid::Error;
 
     fn decode_cursor(s: &str) -> Result<Self, Self::Error> {
         let value = uuid::Uuid::decode_cursor(s)?;
-        Ok(Uuid { value: value })
+        Ok(CustomUuid { value: value })
     }
 
     fn encode_cursor(&self) -> String {

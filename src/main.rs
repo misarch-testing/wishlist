@@ -22,7 +22,7 @@ mod mutation;
 use mutation::Mutation;
 
 mod custom_uuid;
-use custom_uuid::Uuid;
+use custom_uuid::CustomUuid;
 
 mod base_connection;
 mod foreign_types;
@@ -51,8 +51,8 @@ async fn db_connection() -> Client {
 /// Can be used to insert dummy wishlist data in the MongoDB database.
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
-        _id: Uuid::new_v4(),
-        user: User { id: Uuid::new_v4() },
+        _id: CustomUuid::new_v4(),
+        user: User { id: CustomUuid::new_v4() },
         product_variants: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),

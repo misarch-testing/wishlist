@@ -12,7 +12,7 @@ use crate::{
     mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
     query::query_wishlist,
     wishlist::Wishlist,
-    custom_uuid::Uuid,
+    custom_uuid::CustomUuid,
 };
 
 /// Describes GraphQL wishlist mutations.
@@ -36,7 +36,7 @@ impl Mutation {
             .collect();
         let current_timestamp = DateTime::now();
         let wishlist = Wishlist {
-            _id: Uuid::new_v4(),
+            _id: CustomUuid::new_v4(),
             user: User { id: input.user_id },
             product_variants: normalized_product_variants,
             name: input.name,
@@ -74,7 +74,7 @@ impl Mutation {
     async fn delete_wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        #[graphql(desc = "UUID of wishlist to delete.")] id: Uuid,
+        #[graphql(desc = "UUID of wishlist to delete.")] id: CustomUuid,
     ) -> Result<bool> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();
