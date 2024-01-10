@@ -4,7 +4,7 @@ use crate::{
     wishlist_connection::WishlistConnection,
     Wishlist,
 };
-use async_graphql::{Context, Error, Result, Object};
+use async_graphql::{Context, Error, Object, Result};
 use bson::Document;
 use mongodb::{bson::doc, options::FindOptions, Collection};
 use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
@@ -51,10 +51,11 @@ impl Query {
     }
 
     /// Retrieves wishlist of specific id.
+    #[graphql(entity)]
     async fn wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
+        #[graphql(key, desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();

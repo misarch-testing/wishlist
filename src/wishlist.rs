@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 /// The Wishlist of a user.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
+#[graphql(unresolvable)]
 pub struct Wishlist {
     /// Wishlist UUID.
     pub _id: String,

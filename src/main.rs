@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs::File, io::Write};
 
-use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
+use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
@@ -71,7 +71,8 @@ async fn main() -> std::io::Result<()> {
     if args.generate_schema {
         let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
         let mut file = File::create("./schemas/wishlist.graphql")?;
-        let schema_sdl = schema.sdl();
+        let sdl_export_options = SDLExportOptions::new().federation();
+        let schema_sdl = schema.sdl_with_options(sdl_export_options);
         file.write_all(schema_sdl.as_bytes())?;
         println!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
     } else {
@@ -88,6 +89,7 @@ async fn start_service() {
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
+        .enable_federation()
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use async_graphql::{Context, Error, Result, Object};
+use async_graphql::{Context, Error, Object, Result};
 use bson::Bson;
 use mongodb::{
     bson::{doc, DateTime},

@@ -4,6 +4,7 @@ use crate::{base_connection::BaseConnection, wishlist::Wishlist};
 
 /// A connection of Wishlists.
 #[derive(SimpleObject)]
+#[graphql(shareable)]
 pub struct WishlistConnection {
     /// The resulting entities.
     pub nodes: Vec<Wishlist>,

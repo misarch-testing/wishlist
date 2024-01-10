@@ -2,6 +2,7 @@ use async_graphql::{OutputType, SimpleObject};
 
 /// A base connection for an OutputType.
 #[derive(SimpleObject)]
+#[graphql(shareable)]
 pub struct BaseConnection<T: OutputType> {
     /// The resulting entities.
     pub nodes: Vec<T>,
