@@ -1,6 +1,7 @@
 use async_graphql::{InputObject, SimpleObject};
 use std::collections::HashSet;
-use uuid::Uuid;
+
+use crate::custom_uuid::Uuid;
 
 #[derive(SimpleObject, InputObject)]
 pub struct AddWishlistInput {

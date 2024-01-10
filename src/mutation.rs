@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
 use async_graphql::{Context, Error, Object, Result};
 use bson::Bson;
@@ -6,12 +6,13 @@ use mongodb::{
     bson::{doc, DateTime},
     Collection,
 };
-use uuid::Uuid;
 
 use crate::{
+    foreign_types::{ProductVariant, User},
     mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
     query::query_wishlist,
     wishlist::Wishlist,
+    custom_uuid::Uuid,
 };
 
 /// Describes GraphQL wishlist mutations.
@@ -28,17 +29,16 @@ impl Mutation {
         #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
     ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
-        let normalized_product_variant_ids: HashSet<String> = input
+        let normalized_product_variants: HashSet<ProductVariant> = input
             .product_variant_ids
             .iter()
-            .map(|id| id.as_hyphenated().to_string())
+            .map(|id| ProductVariant { id: id.clone() })
             .collect();
         let current_timestamp = DateTime::now();
-        let stringified_user_id = input.user_id.as_hyphenated().to_string();
         let wishlist = Wishlist {
-            _id: Uuid::new_v4().as_hyphenated().to_string(),
-            user_id: stringified_user_id,
-            product_variant_ids: normalized_product_variant_ids,
+            _id: Uuid::new_v4(),
+            user: User { id: input.user_id },
+            product_variants: normalized_product_variants,
             name: input.name,
             created_at: current_timestamp,
             last_updated_at: current_timestamp,

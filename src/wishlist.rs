@@ -6,17 +6,21 @@ use async_graphql::{
 };
 use bson::datetime::DateTime;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+
+use crate::{
+    custom_uuid::Uuid,
+    foreign_types::{ProductVariant, User},
+};
 
 /// The Wishlist of a user.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
 pub struct Wishlist {
     /// Wishlist UUID.
-    pub _id: String,
-    /// UUID of user.
-    pub user_id: String,
-    /// UUIDs product variants in Wishlist.
-    pub product_variant_ids: HashSet<String>,
+    pub _id: Uuid,
+    /// User.
+    pub user: User,
+    /// Product variants in Wishlist.
+    pub product_variants: HashSet<ProductVariant>,
     /// Name of Wishlist.
     pub name: String,
     /// Timestamp when Wishlist was created.
@@ -27,7 +31,7 @@ pub struct Wishlist {
 
 impl From<Wishlist> for Uuid {
     fn from(value: Wishlist) -> Self {
-        Uuid::parse_str(&value._id).unwrap()
+        value._id
     }
 }
 
