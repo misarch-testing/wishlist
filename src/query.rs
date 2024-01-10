@@ -1,8 +1,10 @@
 use crate::{
+    base_connection::{BaseConnection, FindResultWrapper},
     order_datatypes::WishlistOrder,
-    Wishlist, base_connection::{FindResultWrapper, BaseConnection}, wishlist_connection::WishlistConnection,
+    wishlist_connection::WishlistConnection,
+    Wishlist,
 };
-use async_graphql::{Context, Error, FieldResult, Object};
+use async_graphql::{Context, Error, Result, Object};
 use bson::Document;
 use mongodb::{bson::doc, options::FindOptions, Collection};
 use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
@@ -24,7 +26,7 @@ impl Query {
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
             WishlistOrder,
         >,
-    ) -> FieldResult<WishlistConnection> {
+    ) -> Result<WishlistConnection> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let wishlist_order = order_by.unwrap_or_default();
         let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
@@ -41,8 +43,7 @@ impl Query {
         match maybe_find_results {
             Ok(find_results) => {
                 let find_result_wrapper = FindResultWrapper(find_results);
-                let connection =
-                    Into::<BaseConnection<Wishlist>>::into(find_result_wrapper);
+                let connection = Into::<BaseConnection<Wishlist>>::into(find_result_wrapper);
                 Ok(Into::<WishlistConnection>::into(connection))
             }
             Err(_) => return Err(Error::new("Retrieving wishlists failed in MongoDB.")),
@@ -54,7 +55,7 @@ impl Query {
         &self,
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
-    ) -> FieldResult<Wishlist> {
+    ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();
         query_wishlist(&collection, &stringified_uuid).await
@@ -68,7 +69,7 @@ impl Query {
 pub async fn query_wishlist(
     collection: &Collection<Wishlist>,
     stringified_uuid: &String,
-) -> FieldResult<Wishlist> {
+) -> Result<Wishlist> {
     match collection
         .find_one(doc! {"_id": &stringified_uuid }, None)
         .await

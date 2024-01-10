@@ -19,7 +19,7 @@ pub struct Wishlist {
     pub product_variant_ids: HashSet<String>,
     /// Name of Wishlist.
     pub name: String,
-    /// Timestamp when Wishlist was created. 
+    /// Timestamp when Wishlist was created.
     pub created_at: DateTime,
     /// Timestamp when Wishlist was last updated.
     pub last_updated_at: DateTime,

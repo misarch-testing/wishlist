@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use async_graphql::{Context, Error, FieldResult, Object};
+use async_graphql::{Context, Error, Result, Object};
 use bson::Bson;
 use mongodb::{
     bson::{doc, DateTime},
@@ -26,7 +26,7 @@ impl Mutation {
         &self,
         ctx: &Context<'a>,
         #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
-    ) -> FieldResult<Wishlist> {
+    ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let normalized_product_variant_ids: HashSet<String> = input
             .product_variant_ids
@@ -59,7 +59,7 @@ impl Mutation {
         &self,
         ctx: &Context<'a>,
         #[graphql(desc = "UpdateWishlistInput")] input: UpdateWishlistInput,
-    ) -> FieldResult<Wishlist> {
+    ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = input.id.as_hyphenated().to_string();
         let current_timestamp = DateTime::now();
@@ -75,7 +75,7 @@ impl Mutation {
         &self,
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to delete.")] id: Uuid,
-    ) -> FieldResult<bool> {
+    ) -> Result<bool> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();
         if let Err(_) = collection
@@ -95,7 +95,7 @@ impl Mutation {
 /// Extracts UUID String from Bson.
 ///
 /// Adding a wishlist returns a String formated UUID in a Bson document. This function helps to extract the UUID.
-fn string_uuid_from_bson(bson: Bson) -> FieldResult<String> {
+fn string_uuid_from_bson(bson: Bson) -> Result<String> {
     match bson {
         Bson::String(id) => Ok(id),
         _ => {
@@ -118,7 +118,7 @@ async fn update_product_variant_ids(
     stringified_uuid: &String,
     input: &UpdateWishlistInput,
     current_timestamp: &DateTime,
-) -> FieldResult<()> {
+) -> Result<()> {
     if let Some(definitely_product_variant_ids) = &input.product_variant_ids {
         let normalized_product_variant_ids: Vec<String> = definitely_product_variant_ids
             .iter()
@@ -142,7 +142,7 @@ async fn update_name(
     stringified_uuid: &String,
     input: &UpdateWishlistInput,
     current_timestamp: &DateTime,
-) -> FieldResult<()> {
+) -> Result<()> {
     if let Some(definitely_name) = &input.name {
         let result = collection
             .update_one(

@@ -14,7 +14,7 @@ pub struct WishlistConnection {
 }
 
 /// Implementation of conversion from BaseConnection<Wishlist> to WishlistConnection.
-/// 
+///
 /// Prevents GraphQL naming conflicts.
 impl From<BaseConnection<Wishlist>> for WishlistConnection {
     fn from(value: BaseConnection<Wishlist>) -> Self {
