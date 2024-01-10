@@ -13,6 +13,7 @@ use foreign_types::User;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 mod wishlist;
+use uuid::Uuid;
 use wishlist::Wishlist;
 
 mod query;
@@ -21,15 +22,13 @@ use query::Query;
 mod mutation;
 use mutation::Mutation;
 
-mod custom_uuid;
-use custom_uuid::CustomUuid;
-
 mod base_connection;
 mod foreign_types;
 mod mutation_input_structs;
 mod order_datatypes;
+mod product_variant_connection;
+mod uuid_serde;
 mod wishlist_connection;
-
 
 /// Builds the GraphiQL frontend.
 async fn graphiql() -> impl IntoResponse {
@@ -51,9 +50,9 @@ async fn db_connection() -> Client {
 /// Can be used to insert dummy wishlist data in the MongoDB database.
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
-        _id: CustomUuid::new_v4(),
-        user: User { id: CustomUuid::new_v4() },
-        product_variants: HashSet::new(),
+        _id: Uuid::new_v4(),
+        user: User { id: Uuid::new_v4() },
+        internal_product_variants: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),
         last_updated_at: DateTime::now(),

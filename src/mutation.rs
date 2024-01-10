@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
 use async_graphql::{Context, Error, Object, Result};
 use bson::Bson;
@@ -6,13 +6,13 @@ use mongodb::{
     bson::{doc, DateTime},
     Collection,
 };
+use uuid::Uuid;
 
 use crate::{
     foreign_types::{ProductVariant, User},
     mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
     query::query_wishlist,
     wishlist::Wishlist,
-    custom_uuid::CustomUuid,
 };
 
 /// Describes GraphQL wishlist mutations.
@@ -36,9 +36,9 @@ impl Mutation {
             .collect();
         let current_timestamp = DateTime::now();
         let wishlist = Wishlist {
-            _id: CustomUuid::new_v4(),
+            _id: Uuid::new_v4(),
             user: User { id: input.user_id },
-            product_variants: normalized_product_variants,
+            internal_product_variants: normalized_product_variants,
             name: input.name,
             created_at: current_timestamp,
             last_updated_at: current_timestamp,
@@ -74,7 +74,7 @@ impl Mutation {
     async fn delete_wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        #[graphql(desc = "UUID of wishlist to delete.")] id: CustomUuid,
+        #[graphql(desc = "UUID of wishlist to delete.")] id: Uuid,
     ) -> Result<bool> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
         let stringified_uuid = id.as_hyphenated().to_string();

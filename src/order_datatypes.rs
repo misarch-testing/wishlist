@@ -75,3 +75,44 @@ impl Default for WishlistOrder {
         }
     }
 }
+
+/// Describes the fields that a foreign types can be ordered by.
+///
+/// Only the Id valid at the moment.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum BaseOrderField {
+    /// Orders by "id".
+    Id,
+}
+
+impl BaseOrderField {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BaseOrderField::Id => "_id",
+        }
+    }
+}
+
+impl Default for BaseOrderField {
+    fn default() -> Self {
+        Self::Id
+    }
+}
+
+/// Specifies the order of foreign types.
+#[derive(SimpleObject, InputObject)]
+pub struct BaseOrder {
+    /// Order direction of wishlists.
+    pub direction: Option<OrderDirection>,
+    /// Field that wishlists should be ordered by.
+    pub field: Option<BaseOrderField>,
+}
+
+impl Default for BaseOrder {
+    fn default() -> Self {
+        Self {
+            direction: Some(Default::default()),
+            field: Some(Default::default()),
+        }
+    }
+}

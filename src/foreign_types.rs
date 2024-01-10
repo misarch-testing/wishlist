@@ -1,21 +1,30 @@
 use async_graphql::SimpleObject;
 use serde::{Deserialize, Serialize};
-use std::hash::Hash;
+use std::{cmp::Ordering, hash::Hash};
+use uuid::Uuid;
 
-use crate::custom_uuid::CustomUuid;
+use crate::uuid_serde::serialize_uuid;
 
 /// Foreign type of a user.
 #[derive(Debug, Serialize, Deserialize, Hash, Eq, PartialEq, Clone, SimpleObject)]
 #[graphql(unresolvable)]
 pub struct User {
     /// UUID of the user.
-    pub id: CustomUuid,
+    #[serde(serialize_with = "serialize_uuid")]
+    pub id: Uuid,
 }
 
 /// Foreign type of a product variant.
-#[derive(Debug, Serialize, Deserialize, Hash, Eq, PartialEq, Clone, SimpleObject)]
+#[derive(Debug, Serialize, Deserialize, Hash, Eq, PartialEq, Copy, Clone, SimpleObject)]
 #[graphql(unresolvable)]
 pub struct ProductVariant {
     /// UUID of the product variant.
-    pub id: CustomUuid,
+    #[serde(serialize_with = "serialize_uuid")]
+    pub id: Uuid,
+}
+
+impl PartialOrd for ProductVariant {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
 }
