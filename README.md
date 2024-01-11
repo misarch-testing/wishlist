@@ -10,12 +10,17 @@
 - CRUD wishlists:
     ```rust
     pub struct Wishlist {
-        pub id: Id,
-        pub user_id: Id,
-        pub product_variant_ids: HashSet<Id>,
+        pub id: Uuid,
+        pub user_id: Uuid,
+        pub product_variants: HashSet<ProductVariant>,
         pub name: String,
         pub created_at: DateTime,
         pub last_updated_at: DateTime,
+    }
+
+    /// Foreign ProductVariant
+    pub struct ProductVariant{
+        id: Uuid
     }
     ```
 - Validates all UUIDs input as strings

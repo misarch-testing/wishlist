@@ -60,14 +60,55 @@ impl Default for WishlistOrderField {
 
 /// Specifies the order of wishlists.
 #[derive(SimpleObject, InputObject)]
-pub struct WishlistOrder {
+pub struct WishlistOrderInput {
     /// Order direction of wishlists.
     pub direction: Option<OrderDirection>,
     /// Field that wishlists should be ordered by.
     pub field: Option<WishlistOrderField>,
 }
 
-impl Default for WishlistOrder {
+impl Default for WishlistOrderInput {
+    fn default() -> Self {
+        Self {
+            direction: Some(Default::default()),
+            field: Some(Default::default()),
+        }
+    }
+}
+
+/// Describes the fields that a foreign types can be ordered by.
+///
+/// Only the Id valid at the moment.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum CommonOrderField {
+    /// Orders by "id".
+    Id,
+}
+
+impl CommonOrderField {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CommonOrderField::Id => "_id",
+        }
+    }
+}
+
+impl Default for CommonOrderField {
+    fn default() -> Self {
+        Self::Id
+    }
+}
+
+/// Specifies the order of foreign types.
+#[derive(SimpleObject, InputObject)]
+pub struct CommonOrderInput {
+    /// Order direction of wishlists.
+    pub direction: Option<OrderDirection>,
+    /// Field that wishlists should be ordered by.
+    pub field: Option<CommonOrderField>,
+}
+
+impl Default for CommonOrderInput {
     fn default() -> Self {
         Self {
             direction: Some(Default::default()),

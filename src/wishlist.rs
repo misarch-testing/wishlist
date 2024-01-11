@@ -1,44 +1,100 @@
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 use async_graphql::{
     connection::{Edge, EmptyFields},
-    OutputType, SimpleObject,
+    ComplexObject, OutputType, Result, SimpleObject,
 };
 use bson::datetime::DateTime;
+use bson::Uuid;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+
+use crate::{
+    foreign_types::{ProductVariant, User},
+    order_datatypes::{CommonOrderInput, OrderDirection},
+    product_variant_connection::ProductVariantConnection,
+};
 
 /// The Wishlist of a user.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, SimpleObject)]
+#[graphql(complex)]
 pub struct Wishlist {
     /// Wishlist UUID.
-    pub _id: String,
-    /// UUID of user.
-    pub user_id: String,
-    /// UUIDs product variants in Wishlist.
-    pub product_variant_ids: HashSet<String>,
+    pub _id: Uuid,
+    /// User.
+    pub user: User,
     /// Name of Wishlist.
     pub name: String,
-    /// Timestamp when Wishlist was created. 
+    /// Timestamp when Wishlist was created.
     pub created_at: DateTime,
     /// Timestamp when Wishlist was last updated.
     pub last_updated_at: DateTime,
+    #[graphql(visible = false)]
+    pub internal_product_variants: HashSet<ProductVariant>,
+}
+
+#[ComplexObject]
+impl Wishlist {
+    /// Retrieves product variants.
+    async fn product_variants(
+        &self,
+        #[graphql(desc = "Describes that the `first` N wishlists should be retrieved.")]
+        first: Option<usize>,
+        #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
+        skip: Option<usize>,
+        #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
+            CommonOrderInput,
+        >,
+    ) -> Result<ProductVariantConnection> {
+        let mut product_variants: Vec<ProductVariant> =
+            self.internal_product_variants.clone().into_iter().collect();
+        sort_product_variants(&mut product_variants, order_by);
+        let total_count = product_variants.len();
+        let definitely_skip = skip.unwrap_or(0);
+        let definitely_first = first.unwrap_or(usize::MAX);
+        let product_variants_part: Vec<ProductVariant> = product_variants
+            .into_iter()
+            .skip(definitely_skip)
+            .take(definitely_first)
+            .collect();
+        let has_next_page = total_count > product_variants_part.len() + definitely_skip;
+        Ok(ProductVariantConnection {
+            nodes: product_variants_part,
+            has_next_page,
+            total_count: total_count as u64,
+        })
+    }
+}
+
+/// Sorts vector of product variants according to BaseOrder.
+/// 
+/// * `product_variants` - Vector of product variants to sort.
+/// * `order_by` - Specifies order of sorted result.
+fn sort_product_variants(product_variants: &mut Vec<ProductVariant>, order_by: Option<CommonOrderInput>) {
+    let comparator: fn(&ProductVariant, &ProductVariant) -> bool =
+        match order_by.unwrap_or_default().direction.unwrap_or_default() {
+            OrderDirection::Asc => |x, y| x < y,
+            OrderDirection::Desc => |x, y| x > y,
+        };
+    product_variants.sort_by(|x, y| match comparator(x, y) {
+        true => Ordering::Less,
+        false => Ordering::Greater,
+    });
 }
 
 impl From<Wishlist> for Uuid {
     fn from(value: Wishlist) -> Self {
-        Uuid::parse_str(&value._id).unwrap()
+        value._id
     }
 }
 
 pub struct NodeWrapper<Node>(pub Node);
 
-impl<Node> From<NodeWrapper<Node>> for Edge<Uuid, Node, EmptyFields>
+impl<Node> From<NodeWrapper<Node>> for Edge<uuid::Uuid, Node, EmptyFields>
 where
-    Node: Into<Uuid> + OutputType + Clone,
+    Node: Into<uuid::Uuid> + OutputType + Clone,
 {
     fn from(value: NodeWrapper<Node>) -> Self {
-        let uuid = Into::<Uuid>::into(value.0.clone());
+        let uuid = Into::<uuid::Uuid>::into(value.0.clone());
         Edge::new(uuid, value.0)
     }
 }

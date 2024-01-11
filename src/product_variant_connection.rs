@@ -1,24 +1,24 @@
 use async_graphql::SimpleObject;
 
-use crate::{base_connection::BaseConnection, wishlist::Wishlist};
+use crate::{base_connection::BaseConnection, foreign_types::ProductVariant};
 
-/// A connection of Wishlists.
+/// A connection of ProductVariants.
 #[derive(SimpleObject)]
 #[graphql(shareable)]
-pub struct WishlistConnection {
+pub struct ProductVariantConnection {
     /// The resulting entities.
-    pub nodes: Vec<Wishlist>,
+    pub nodes: Vec<ProductVariant>,
     /// Whether this connection has a next page.
     pub has_next_page: bool,
     /// The total amount of items in this connection.
     pub total_count: u64,
 }
 
-/// Implementation of conversion from BaseConnection<Wishlist> to WishlistConnection.
+/// Implementation of conversion from BaseConnection<ProductVariant> to ProductVariantConnection.
 ///
 /// Prevents GraphQL naming conflicts.
-impl From<BaseConnection<Wishlist>> for WishlistConnection {
-    fn from(value: BaseConnection<Wishlist>) -> Self {
+impl From<BaseConnection<ProductVariant>> for ProductVariantConnection {
+    fn from(value: BaseConnection<ProductVariant>) -> Self {
         Self {
             nodes: value.nodes,
             has_next_page: value.has_next_page,
