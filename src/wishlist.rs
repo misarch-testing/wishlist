@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     foreign_types::{ProductVariant, User},
-    order_datatypes::{BaseOrder, OrderDirection},
+    order_datatypes::{CommonOrderInput, OrderDirection},
     product_variant_connection::ProductVariantConnection,
 };
 
@@ -42,7 +42,7 @@ impl Wishlist {
         #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
         skip: Option<usize>,
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
-            BaseOrder,
+            CommonOrderInput,
         >,
     ) -> Result<ProductVariantConnection> {
         let mut product_variants: Vec<ProductVariant> =
@@ -69,7 +69,7 @@ impl Wishlist {
 /// 
 /// * `product_variants` - Vector of product variants to sort.
 /// * `order_by` - Specifies order of sorted result.
-fn sort_product_variants(product_variants: &mut Vec<ProductVariant>, order_by: Option<BaseOrder>) {
+fn sort_product_variants(product_variants: &mut Vec<ProductVariant>, order_by: Option<CommonOrderInput>) {
     let comparator: fn(&ProductVariant, &ProductVariant) -> bool =
         match order_by.unwrap_or_default().direction.unwrap_or_default() {
             OrderDirection::Asc => |x, y| x < y,

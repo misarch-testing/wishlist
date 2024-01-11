@@ -1,6 +1,6 @@
 use crate::{
     base_connection::{BaseConnection, FindResultWrapper},
-    order_datatypes::WishlistOrder,
+    order_datatypes::WishlistOrderInput,
     wishlist_connection::WishlistConnection,
     Wishlist,
 };
@@ -24,7 +24,7 @@ impl Query {
         #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
         skip: Option<u64>,
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
-            WishlistOrder,
+            WishlistOrderInput,
         >,
     ) -> Result<WishlistConnection> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
@@ -52,6 +52,17 @@ impl Query {
 
     /// Retrieves wishlist of specific id.
     async fn wishlist<'a>(
+        &self,
+        ctx: &Context<'a>,
+        #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
+    ) -> Result<Wishlist> {
+        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        query_wishlist(&collection, id).await
+    }
+
+    /// Entity resolver for wishlist of specific key.
+    #[graphql(entity)]
+    async fn wishlist_entity_resolver<'a>(
         &self,
         ctx: &Context<'a>,
         #[graphql(key, desc = "UUID of wishlist to retrieve.")] id: Uuid,
