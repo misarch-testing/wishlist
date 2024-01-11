@@ -6,9 +6,9 @@ use crate::{
 };
 use async_graphql::{Context, Error, Object, Result};
 use bson::Document;
+use bson::Uuid;
 use mongodb::{bson::doc, options::FindOptions, Collection};
 use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
-use uuid::Uuid;
 
 /// Describes GraphQL wishlist queries.
 pub struct Query;
@@ -51,15 +51,13 @@ impl Query {
     }
 
     /// Retrieves wishlist of specific id.
-    #[graphql(entity)]
     async fn wishlist<'a>(
         &self,
         ctx: &Context<'a>,
         #[graphql(key, desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
         let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
-        let stringified_uuid = id.as_hyphenated().to_string();
-        query_wishlist(&collection, &stringified_uuid).await
+        query_wishlist(&collection, id).await
     }
 }
 
@@ -67,23 +65,17 @@ impl Query {
 ///
 /// * `connection` - MongoDB database connection.
 /// * `stringified_uuid` - UUID of wishlist as String.
-pub async fn query_wishlist(
-    collection: &Collection<Wishlist>,
-    stringified_uuid: &String,
-) -> Result<Wishlist> {
-    match collection
-        .find_one(doc! {"_id": &stringified_uuid }, None)
-        .await
-    {
+pub async fn query_wishlist(collection: &Collection<Wishlist>, id: Uuid) -> Result<Wishlist> {
+    match collection.find_one(doc! {"_id": id }, None).await {
         Ok(maybe_wishlist) => match maybe_wishlist {
             Some(wishlist) => Ok(wishlist),
             None => {
-                let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
+                let message = format!("Wishlist with UUID id: `{}` not found.", id);
                 Err(Error::new(message))
             }
         },
         Err(_) => {
-            let message = format!("Wishlist with UUID id: `{}` not found.", stringified_uuid);
+            let message = format!("Wishlist with UUID id: `{}` not found.", id);
             Err(Error::new(message))
         }
     }

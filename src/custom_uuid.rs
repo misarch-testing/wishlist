@@ -17,7 +17,7 @@ impl Uuid {
 }
 
 impl Deref for Uuid {
-    type Target = uuid::Uuid;
+    type Target = bson::Uuid;
 
     fn deref(&self) -> &Self::Target {
         &self.value

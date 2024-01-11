@@ -13,7 +13,7 @@ use foreign_types::User;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 mod wishlist;
-use uuid::Uuid;
+use bson::Uuid;
 use wishlist::Wishlist;
 
 mod query;
@@ -50,8 +50,8 @@ async fn db_connection() -> Client {
 /// Can be used to insert dummy wishlist data in the MongoDB database.
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
-        _id: Uuid::new_v4(),
-        user: User { id: Uuid::new_v4() },
+        _id: Uuid::new(),
+        user: User { id: Uuid::new() },
         internal_product_variants: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),
@@ -91,7 +91,7 @@ async fn start_service() {
     let db: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
 
-    insert_dummy_data(&collection).await;
+    //insert_dummy_data(&collection).await;
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)

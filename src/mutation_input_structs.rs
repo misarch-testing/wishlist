@@ -1,6 +1,6 @@
 use async_graphql::{InputObject, SimpleObject};
+use bson::Uuid;
 use std::collections::HashSet;
-use uuid::Uuid;
 
 #[derive(SimpleObject, InputObject)]
 pub struct AddWishlistInput {
