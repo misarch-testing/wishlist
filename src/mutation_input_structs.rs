@@ -15,7 +15,6 @@ pub struct AddWishlistInput {
 #[derive(SimpleObject, InputObject)]
 pub struct UpdateWishlistInput {
     /// UUID of wishlist to update.
-    /// #[serde(serialize_with = "serialize_uuid")]
     pub id: Uuid,
     /// product variant UUIDs of wishlist to update
     pub product_variant_ids: Option<HashSet<Uuid>>,

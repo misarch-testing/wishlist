@@ -27,7 +27,6 @@ mod foreign_types;
 mod mutation_input_structs;
 mod order_datatypes;
 mod product_variant_connection;
-mod uuid_serde;
 mod wishlist_connection;
 
 /// Builds the GraphiQL frontend.

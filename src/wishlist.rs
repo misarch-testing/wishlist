@@ -12,7 +12,6 @@ use crate::{
     foreign_types::{ProductVariant, User},
     order_datatypes::{BaseOrder, OrderDirection},
     product_variant_connection::ProductVariantConnection,
-    uuid_serde::serialize_uuid,
 };
 
 /// The Wishlist of a user.
@@ -20,7 +19,6 @@ use crate::{
 #[graphql(complex)]
 pub struct Wishlist {
     /// Wishlist UUID.
-    #[serde(serialize_with = "serialize_uuid")]
     pub _id: Uuid,
     /// User.
     pub user: User,
@@ -49,28 +47,38 @@ impl Wishlist {
     ) -> Result<ProductVariantConnection> {
         let mut product_variants: Vec<ProductVariant> =
             self.internal_product_variants.clone().into_iter().collect();
-        let comparator: fn(&ProductVariant, &ProductVariant) -> bool =
-            match order_by.unwrap_or_default().direction.unwrap_or_default() {
-                OrderDirection::Asc => |x, y| x < y,
-                OrderDirection::Desc => |x, y| x > y,
-            };
-        product_variants.sort_by(|x, y| match comparator(x, y) {
-            true => Ordering::Less,
-            false => Ordering::Greater,
-        });
+        sort_product_variants(&mut product_variants, order_by);
         let total_count = product_variants.len();
+        let definitely_skip = skip.unwrap_or(0);
+        let definitely_first = first.unwrap_or(usize::MAX);
         let product_variants_part: Vec<ProductVariant> = product_variants
             .into_iter()
-            .skip(skip.unwrap_or(0))
-            .take(first.unwrap_or(usize::MAX))
+            .skip(definitely_skip)
+            .take(definitely_first)
             .collect();
-        let has_next_page = total_count > product_variants_part.len();
+        let has_next_page = total_count > product_variants_part.len() + definitely_skip;
         Ok(ProductVariantConnection {
             nodes: product_variants_part,
             has_next_page,
             total_count: total_count as u64,
         })
     }
+}
+
+/// Sorts vector of product variants according to BaseOrder.
+/// 
+/// * `product_variants` - Vector of product variants to sort.
+/// * `order_by` - Specifies order of sorted result.
+fn sort_product_variants(product_variants: &mut Vec<ProductVariant>, order_by: Option<BaseOrder>) {
+    let comparator: fn(&ProductVariant, &ProductVariant) -> bool =
+        match order_by.unwrap_or_default().direction.unwrap_or_default() {
+            OrderDirection::Asc => |x, y| x < y,
+            OrderDirection::Desc => |x, y| x > y,
+        };
+    product_variants.sort_by(|x, y| match comparator(x, y) {
+        true => Ordering::Less,
+        false => Ordering::Greater,
+    });
 }
 
 impl From<Wishlist> for Uuid {
