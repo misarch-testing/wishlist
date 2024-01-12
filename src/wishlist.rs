@@ -28,7 +28,7 @@ pub struct Wishlist {
     pub created_at: DateTime,
     /// Timestamp when Wishlist was last updated.
     pub last_updated_at: DateTime,
-    #[graphql(visible = false)]
+    #[graphql(skip)]
     pub internal_product_variants: HashSet<ProductVariant>,
 }
 
