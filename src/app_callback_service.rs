@@ -1,9 +1,6 @@
 use tonic::{Request, Response, Status};
 
-use dapr::{
-    appcallback::*,
-    dapr::dapr::proto::runtime::v1::app_callback_server::AppCallback,
-};
+use dapr::{appcallback::*, dapr::dapr::proto::runtime::v1::app_callback_server::AppCallback};
 
 #[derive(Default)]
 pub struct AppCallbackService {}

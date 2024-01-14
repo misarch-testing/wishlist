@@ -13,6 +13,8 @@ services:
     depends_on:
       wishlist-db:
         condition: service_healthy
+    environment:
+      MONGODB_URL: ${MONGODB_URL}
   wishlist-db:
     image: mongo
     volumes:

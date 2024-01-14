@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::File, io::Write};
+use std::{collections::HashSet, env, fs::File, io::Write};
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
@@ -12,8 +12,8 @@ use clap::{arg, command, Parser};
 use foreign_types::User;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
-use tonic::transport::Server as TonicServer;
 use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
+use tonic::transport::Server as TonicServer;
 
 use bson::Uuid;
 use wishlist::Wishlist;
@@ -44,9 +44,12 @@ async fn graphiql() -> impl IntoResponse {
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
     // Parse a connection string into an options struct.
-    let mut client_options = ClientOptions::parse("mongodb://wishlist-db:27017")
-        .await
-        .unwrap();
+    let mut client_options = match env::var_os("MONGODB_URL") {
+        Some(mongodb_url) => ClientOptions::parse(mongodb_url.into_string().unwrap())
+            .await
+            .unwrap(),
+        None => panic!("$MONGODB_URL is not set."),
+    };
 
     // Manually set an option.
     client_options.app_name = Some("Wishlist".to_string());
@@ -56,7 +59,7 @@ async fn db_connection() -> Client {
 }
 
 /// Establishes connection to Dapr.
-/// 
+///
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
 async fn dapr_connection() {
     let addr = "[::]:50051".parse().unwrap();
@@ -69,7 +72,8 @@ async fn dapr_connection() {
     TonicServer::builder()
         .add_service(AppCallbackServer::new(callback_service))
         .serve(addr)
-        .await.unwrap();
+        .await
+        .unwrap();
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
@@ -127,15 +131,15 @@ async fn start_service() {
 
     let t1 = tokio::spawn(async {
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
     });
 
     let t2 = tokio::spawn(async {
         dapr_connection().await;
     });
-    
+
     t1.await.unwrap();
     t2.await.unwrap();
 }

@@ -1,9 +1,13 @@
 # Wishlist service for MiSArch
 
-### Quickstart (Dev)
+### Quickstart (DevContainer)
 
 1. Open VSCode Development Container
-2. `cargo run` starts GraphiQL on port 8000
+2. `cargo run` starts the GraphQL service + GraphiQL on port `8080`
+
+### Quickstart (Docker Compose)
+
+1. `docker compose -f docker-compose-dev.yaml up --build` in the repository root directory. **IMPORTANT:** MongoDB credentials should be configured for production.
 
 ### What it can do
 
@@ -25,3 +29,8 @@
     ```
 - Validates all UUIDs input as strings
 - Error prop to GraphQL
+
+### Configuration
+
+- The environment variables `${MONGODB_USERNAME}` and `${MONGODB_PASSWORD}` should be set in production to configure the database credentials.
+- `${MONGODB_URL}` can be reconfigured in `.env` for experimentation purposes.
