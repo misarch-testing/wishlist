@@ -37,16 +37,17 @@ async fn graphiql() -> impl IntoResponse {
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
     // Parse a connection string into an options struct.
-    let mut client_options = ClientOptions::parse("mongodb://db:27017").await.unwrap();
+    let mut client_options = ClientOptions::parse("mongodb://wishlist-db:27017").await.unwrap();
 
     // Manually set an option.
-    client_options.app_name = Some("My App".to_string());
+    client_options.app_name = Some("Wishlist".to_string());
 
     // Get a handle to the deployment.
     Client::with_options(client_options).unwrap()
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
+#[allow(dead_code)]
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
         _id: Uuid::new(),
@@ -90,17 +91,15 @@ async fn start_service() {
     let db: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
 
-    //insert_dummy_data(&collection).await;
-
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
         .enable_federation()
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://0.0.0.0:8000");
+    println!("GraphiQL IDE: http://0.0.0.0:8080");
 
-    Server::bind(&"0.0.0.0:8000".parse().unwrap())
+    Server::bind(&"0.0.0.0:8080".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
