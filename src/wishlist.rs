@@ -66,10 +66,13 @@ impl Wishlist {
 }
 
 /// Sorts vector of product variants according to BaseOrder.
-/// 
+///
 /// * `product_variants` - Vector of product variants to sort.
 /// * `order_by` - Specifies order of sorted result.
-fn sort_product_variants(product_variants: &mut Vec<ProductVariant>, order_by: Option<CommonOrderInput>) {
+fn sort_product_variants(
+    product_variants: &mut Vec<ProductVariant>,
+    order_by: Option<CommonOrderInput>,
+) {
     let comparator: fn(&ProductVariant, &ProductVariant) -> bool =
         match order_by.unwrap_or_default().direction.unwrap_or_default() {
             OrderDirection::Asc => |x, y| x < y,

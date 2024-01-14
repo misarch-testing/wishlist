@@ -1,0 +1,69 @@
+use tonic::{Request, Response, Status};
+
+use dapr::{
+    appcallback::*,
+    dapr::dapr::proto::runtime::v1::app_callback_server::AppCallback,
+};
+
+#[derive(Default)]
+pub struct AppCallbackService {}
+
+#[tonic::async_trait]
+impl AppCallback for AppCallbackService {
+    /// Invokes service method with InvokeRequest.
+    async fn on_invoke(
+        &self,
+        _request: Request<InvokeRequest>,
+    ) -> Result<Response<InvokeResponse>, Status> {
+        Ok(Response::new(InvokeResponse::default()))
+    }
+
+    /// Lists all topics subscribed by this app.
+    ///
+    /// NOTE: Dapr runtime will call this method to get
+    /// the list of topics the app wants to subscribe to.
+    /// In this example, the app is subscribing to topic `A`.
+    async fn list_topic_subscriptions(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<ListTopicSubscriptionsResponse>, Status> {
+        let topic = "product-variant/created".to_string();
+        let pubsub_name = "pubsub".to_string();
+
+        let list_subscriptions = ListTopicSubscriptionsResponse::topic(pubsub_name, topic);
+
+        Ok(Response::new(list_subscriptions))
+    }
+
+    /// Subscribes events from Pubsub.
+    async fn on_topic_event(
+        &self,
+        request: Request<TopicEventRequest>,
+    ) -> Result<Response<TopicEventResponse>, Status> {
+        let r = request.into_inner();
+        let data = &r.data;
+        let data_content_type = &r.data_content_type;
+
+        let message = String::from_utf8_lossy(data);
+        println!("Message: {}", &message);
+        println!("Content-Type: {}", &data_content_type);
+
+        Ok(Response::new(TopicEventResponse::default()))
+    }
+
+    /// Lists all input bindings subscribed by this app.
+    async fn list_input_bindings(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<ListInputBindingsResponse>, Status> {
+        Ok(Response::new(ListInputBindingsResponse::default()))
+    }
+
+    /// Listens events from the input bindings.
+    async fn on_binding_event(
+        &self,
+        _request: Request<BindingEventRequest>,
+    ) -> Result<Response<BindingEventResponse>, Status> {
+        Ok(Response::new(BindingEventResponse::default()))
+    }
+}
