@@ -1,19 +1,38 @@
 services:
-  app:
+  wishlist:
+    extends:
+      file: docker-compose-base.yaml
+      service: wishlist
     build:
       context: .
       dockerfile: devcontainer-dockerfile
-    depends_on:
-      - db
     ports:
-      - 8000:8000
-  db:
-    image: mongo
-  mongoexpress:
+      - 8080:8080
+  wishlist-db:
+    extends:
+      file: docker-compose-base.yaml
+      service: wishlist-db
+  wishlist-mongoexpress:
     image: mongo-express
     ports:
       - 8081:8081
     depends_on:
-      - db
+      - wishlist-db
     environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://db:27017
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_PASSWORD}
+      ME_CONFIG_MONGODB_URL: ${MONGODB_URL}
+  wishlist-dapr:
+    extends:
+      file: docker-compose-base.yaml
+      service: wishlist-dapr
+    volumes:
+      - "./.dapr/dapr-config-minimal.yaml:/config.yaml"
+      - "./.dapr/components:/components"
+  placement:
+    image: "daprio/dapr"
+    command: ["./placement", "-port", "50006"]
+    ports:
+      - 50006:50006
+volumes:
+  wishlist-db-data:

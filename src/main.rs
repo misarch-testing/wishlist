@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::File, io::Write};
+use std::{collections::HashSet, env, fs::File, io::Write};
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
@@ -12,15 +12,22 @@ use clap::{arg, command, Parser};
 use foreign_types::User;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
-mod wishlist;
+use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
+use tonic::transport::Server as TonicServer;
+
 use bson::Uuid;
 use wishlist::Wishlist;
+
+mod wishlist;
 
 mod query;
 use query::Query;
 
 mod mutation;
 use mutation::Mutation;
+
+mod app_callback_service;
+use app_callback_service::AppCallbackService;
 
 mod base_connection;
 mod foreign_types;
@@ -37,16 +44,40 @@ async fn graphiql() -> impl IntoResponse {
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
     // Parse a connection string into an options struct.
-    let mut client_options = ClientOptions::parse("mongodb://db:27017").await.unwrap();
+    let mut client_options = match env::var_os("MONGODB_URL") {
+        Some(mongodb_url) => ClientOptions::parse(mongodb_url.into_string().unwrap())
+            .await
+            .unwrap(),
+        None => panic!("$MONGODB_URL is not set."),
+    };
 
     // Manually set an option.
-    client_options.app_name = Some("My App".to_string());
+    client_options.app_name = Some("Wishlist".to_string());
 
     // Get a handle to the deployment.
     Client::with_options(client_options).unwrap()
 }
 
+/// Establishes connection to Dapr.
+///
+/// Adds AppCallbackService which defines pub/sub interaction with Dapr.
+async fn dapr_connection() {
+    let addr = "[::]:50051".parse().unwrap();
+
+    let callback_service = AppCallbackService::default();
+
+    println!("AppCallback server listening on: {}", addr);
+
+    // Create a gRPC server with the callback_service.
+    TonicServer::builder()
+        .add_service(AppCallbackServer::new(callback_service))
+        .serve(addr)
+        .await
+        .unwrap();
+}
+
 /// Can be used to insert dummy wishlist data in the MongoDB database.
+#[allow(dead_code)]
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
         _id: Uuid::new(),
@@ -87,10 +118,8 @@ async fn main() -> std::io::Result<()> {
 /// Starts wishlist service on port 8000.
 async fn start_service() {
     let client = db_connection().await;
-    let db: Database = client.database("wishlist-database");
-    let collection: mongodb::Collection<Wishlist> = db.collection::<Wishlist>("wishlists");
-
-    //insert_dummy_data(&collection).await;
+    let db_client: Database = client.database("wishlist-database");
+    let collection: mongodb::Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
@@ -98,10 +127,19 @@ async fn start_service() {
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://0.0.0.0:8000");
+    println!("GraphiQL IDE: http://0.0.0.0:8080");
 
-    Server::bind(&"0.0.0.0:8000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let t1 = tokio::spawn(async {
+        Server::bind(&"0.0.0.0:8080".parse().unwrap())
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    });
+
+    let t2 = tokio::spawn(async {
+        dapr_connection().await;
+    });
+
+    t1.await.unwrap();
+    t2.await.unwrap();
 }
