@@ -27,7 +27,7 @@ impl AppCallback for AppCallbackService {
         &self,
         _request: Request<()>,
     ) -> Result<Response<ListTopicSubscriptionsResponse>, Status> {
-        let topic = "product-variant/created".to_string();
+        let topic = "catalog/product-variant/created".to_string();
         let pubsub_name = "pubsub".to_string();
 
         let list_subscriptions = ListTopicSubscriptionsResponse::topic(pubsub_name, topic);
