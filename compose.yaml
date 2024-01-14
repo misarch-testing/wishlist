@@ -25,7 +25,8 @@ services:
       file: docker-compose-base.yaml
       service: wishlist-dapr
     volumes:
-      - "./dapr-config-minimal.yaml:/config.yaml"
+      - "./.dapr/dapr-config-minimal.yaml:/config.yaml"
+      - "./.dapr/components:/components"
   placement:
     image: "daprio/dapr"
     command: ["./placement", "-port", "50006"]
