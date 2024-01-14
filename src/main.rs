@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, fs::File, io::Write};
+use std::{collections::HashSet, env, fs::File, io::Write, default};
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
@@ -10,7 +10,7 @@ use axum::{
 use clap::{arg, command, Parser};
 
 use foreign_types::User;
-use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
+use mongodb::{bson::DateTime, options::{ClientOptions, Credential, ServerAddress}, Client, Collection, Database};
 
 use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
 use tonic::transport::Server as TonicServer;
@@ -43,13 +43,24 @@ async fn graphiql() -> impl IntoResponse {
 
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
-    // Parse a connection string into an options struct.
-    let mut client_options = match env::var_os("MONGODB_URL") {
-        Some(mongodb_url) => ClientOptions::parse(mongodb_url.into_string().unwrap())
-            .await
-            .unwrap(),
+    let username = match env::var_os("MONGODB_USERNAME") {
+        Some(username) => username.into_string().unwrap(),
+        None => panic!("$MONGODB_USERNAME is not set."),
+    };
+    let password = match env::var_os("MONGODB_PASSWORD") {
+        Some(password) => password.into_string().unwrap(),
+        None => panic!("$MONGODB_PASSWORD is not set."),
+    };
+    let server_address = match env::var_os("MONGODB_URL") {
+        Some(url) => ServerAddress::parse(url.into_string().unwrap()).unwrap(),
         None => panic!("$MONGODB_URL is not set."),
     };
+
+    let hosts = vec![server_address];
+    let credential = Credential::builder().username(username).password(password).build();
+
+    // Parse a connection string into an options struct.
+    let mut client_options = ClientOptions::builder().hosts(hosts).credential(credential).build();
 
     // Manually set an option.
     client_options.app_name = Some("Wishlist".to_string());
