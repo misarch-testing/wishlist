@@ -62,7 +62,7 @@ async fn db_connection() -> Client {
 ///
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
 async fn dapr_connection() {
-    let addr = "[::]:50051".parse().unwrap();
+    let addr = "[::]:50006".parse().unwrap();
 
     let callback_service = AppCallbackService::default();
 
