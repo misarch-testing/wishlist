@@ -117,8 +117,6 @@ async fn start_service() {
     let db_client: Database = client.database("wishlist-database");
     let collection: mongodb::Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
 
-    dapr_connection().await;
-
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(collection)
         .enable_federation()
@@ -127,8 +125,17 @@ async fn start_service() {
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
     println!("GraphiQL IDE: http://0.0.0.0:8080");
 
-    Server::bind(&"0.0.0.0:8080".parse().unwrap())
+    let t1 = tokio::spawn(async {
+        Server::bind(&"0.0.0.0:8080".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
+    });
+
+    let t2 = tokio::spawn(async {
+        dapr_connection().await;
+    });
+    
+    t1.await.unwrap();
+    t2.await.unwrap();
 }
