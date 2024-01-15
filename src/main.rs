@@ -10,7 +10,7 @@ use axum::{
 use clap::{arg, command, Parser};
 
 use foreign_types::User;
-use mongodb::{bson::DateTime, options::{ClientOptions, Credential, ServerAddress}, Client, Collection, Database};
+use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
 use tonic::transport::Server as TonicServer;
