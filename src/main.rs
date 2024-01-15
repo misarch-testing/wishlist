@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, fs::File, io::Write, default};
+use std::{collections::HashSet, env, fs::File, io::Write};
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
@@ -43,24 +43,13 @@ async fn graphiql() -> impl IntoResponse {
 
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
-    let username = match env::var_os("MONGODB_USERNAME") {
-        Some(username) => username.into_string().unwrap(),
-        None => panic!("$MONGODB_USERNAME is not set."),
+    let uri = match env::var_os("MONGODB_URI") {
+        Some(uri) => uri.into_string().unwrap(),
+        None => panic!("$MONGODB_URI is not set."),
     };
-    let password = match env::var_os("MONGODB_PASSWORD") {
-        Some(password) => password.into_string().unwrap(),
-        None => panic!("$MONGODB_PASSWORD is not set."),
-    };
-    let server_address = match env::var_os("MONGODB_URL") {
-        Some(url) => ServerAddress::parse(url.into_string().unwrap()).unwrap(),
-        None => panic!("$MONGODB_URL is not set."),
-    };
-
-    let hosts = vec![server_address];
-    let credential = Credential::builder().username(username).password(password).build();
 
     // Parse a connection string into an options struct.
-    let mut client_options = ClientOptions::builder().hosts(hosts).credential(credential).build();
+    let mut client_options = ClientOptions::parse(uri).await.unwrap();
 
     // Manually set an option.
     client_options.app_name = Some("Wishlist".to_string());
