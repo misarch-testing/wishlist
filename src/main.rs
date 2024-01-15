@@ -43,13 +43,13 @@ async fn graphiql() -> impl IntoResponse {
 
 /// Establishes database connection and returns the client.
 async fn db_connection() -> Client {
-    // Parse a connection string into an options struct.
-    let mut client_options = match env::var_os("MONGODB_URL") {
-        Some(mongodb_url) => ClientOptions::parse(mongodb_url.into_string().unwrap())
-            .await
-            .unwrap(),
-        None => panic!("$MONGODB_URL is not set."),
+    let uri = match env::var_os("MONGODB_URI") {
+        Some(uri) => uri.into_string().unwrap(),
+        None => panic!("$MONGODB_URI is not set."),
     };
+
+    // Parse a connection string into an options struct.
+    let mut client_options = ClientOptions::parse(uri).await.unwrap();
 
     // Manually set an option.
     client_options.app_name = Some("Wishlist".to_string());

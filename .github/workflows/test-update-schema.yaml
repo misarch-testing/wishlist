@@ -1,13 +1,11 @@
-name: Update GraphQL schema
+name: Test update GraphQL schema on pull request
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
 
 jobs:
   schema:
-    name: Update GraphQL schema
+    name: Test update GraphQL schema on pull request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -24,9 +22,3 @@ jobs:
         run: |
           sudo apt install -y protobuf-compiler
           cargo run -- --generate-schema
-      - uses: peter-evans/create-pull-request@v5
-        with:
-          path: ./schemas
-          commit-message: Update wishlist schema
-          branch: update/wishlist
-          token: ${{ secrets.SCHEMAS_PUSH_SECRET }}

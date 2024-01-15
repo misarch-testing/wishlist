@@ -14,7 +14,7 @@ services:
       wishlist-db:
         condition: service_healthy
     environment:
-      MONGODB_URL: ${MONGODB_URL}
+      MONGODB_URI: mongodb://wishlist-db:27017
   wishlist-db:
     image: mongo
     volumes:
@@ -24,9 +24,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
   wishlist-dapr:
     image: "daprio/daprd:edge"
     command:
@@ -42,7 +39,8 @@ services:
         "placement:50006",
         "--config",
         "/config.yaml",
-        "--resources-path", "/components"
+        "--resources-path",
+        "/components",
       ]
     network_mode: "service:wishlist"
 volumes:

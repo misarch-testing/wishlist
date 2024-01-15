@@ -19,9 +19,7 @@ services:
     depends_on:
       - wishlist-db
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_USERNAME}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_PASSWORD}
-      ME_CONFIG_MONGODB_URL: ${MONGODB_URL}
+      ME_CONFIG_MONGODB_URL: mongodb://wishlist-db:27017
   wishlist-dapr:
     extends:
       file: docker-compose-base.yaml
