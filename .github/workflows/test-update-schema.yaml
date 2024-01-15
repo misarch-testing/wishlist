@@ -5,7 +5,7 @@ on:
 
 jobs:
   schema:
-    name: Update GraphQL schema
+    name: Test update GraphQL schema on pull request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
