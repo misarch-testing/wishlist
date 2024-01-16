@@ -29,6 +29,8 @@ use mutation::Mutation;
 mod app_callback_service;
 use app_callback_service::AppCallbackService;
 
+use crate::foreign_types::ProductVariant;
+
 mod base_connection;
 mod foreign_types;
 mod mutation_input_structs;
@@ -61,12 +63,12 @@ async fn db_connection() -> Client {
 /// Establishes connection to Dapr.
 ///
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
-async fn dapr_connection() {
-    let addr = "[::]:50006".parse().unwrap();
+async fn dapr_connection(db_client: Database) {
+    let addr = "[::]:50051".parse().unwrap();
+    let collection: mongodb::Collection<ProductVariant> =
+        db_client.collection::<ProductVariant>("product_variants");
 
-    let callback_service = AppCallbackService::default();
-
-    println!("AppCallback server listening on: {}", addr);
+    let callback_service = AppCallbackService { collection };
 
     // Create a gRPC server with the callback_service.
     TonicServer::builder()
@@ -74,6 +76,8 @@ async fn dapr_connection() {
         .serve(addr)
         .await
         .unwrap();
+
+    println!("AppCallback server listening on: {}", addr);
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
@@ -119,25 +123,24 @@ async fn main() -> std::io::Result<()> {
 async fn start_service() {
     let client = db_connection().await;
     let db_client: Database = client.database("wishlist-database");
-    let collection: mongodb::Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
-        .data(collection)
+        .data(db_client.clone())
         .enable_federation()
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://0.0.0.0:8080");
 
     let t1 = tokio::spawn(async {
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())
             .await
             .unwrap();
+        println!("GraphiQL IDE: http://0.0.0.0:8080");
     });
 
     let t2 = tokio::spawn(async {
-        dapr_connection().await;
+        dapr_connection(db_client).await;
     });
 
     t1.await.unwrap();

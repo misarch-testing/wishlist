@@ -7,7 +7,7 @@ use crate::{
 use async_graphql::{Context, Error, Object, Result};
 use bson::Document;
 use bson::Uuid;
-use mongodb::{bson::doc, options::FindOptions, Collection};
+use mongodb::{bson::doc, options::FindOptions, Collection, Database};
 use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor};
 
 /// Describes GraphQL wishlist queries.
@@ -27,7 +27,8 @@ impl Query {
             WishlistOrderInput,
         >,
     ) -> Result<WishlistConnection> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist_order = order_by.unwrap_or_default();
         let sorting_doc = doc! {wishlist_order.field.unwrap_or_default().as_str(): i32::from(wishlist_order.direction.unwrap_or_default())};
         let find_options = FindOptions::builder()
@@ -56,7 +57,8 @@ impl Query {
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         query_wishlist(&collection, id).await
     }
 
@@ -67,7 +69,8 @@ impl Query {
         ctx: &Context<'a>,
         #[graphql(key, desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         query_wishlist(&collection, id).await
     }
 }

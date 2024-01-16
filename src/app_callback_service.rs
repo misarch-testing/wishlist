@@ -1,9 +1,30 @@
+use json::JsonValue;
+use mongodb::Collection;
 use tonic::{Request, Response, Status};
 
+use bson::Uuid;
 use dapr::{appcallback::*, dapr::dapr::proto::runtime::v1::app_callback_server::AppCallback};
 
-#[derive(Default)]
-pub struct AppCallbackService {}
+use crate::foreign_types::ProductVariant;
+
+pub struct AppCallbackService {
+    pub collection: Collection<ProductVariant>,
+}
+
+impl AppCallbackService {
+    /// Add a newly created product variant to MongoDB.
+    async fn add_product_variant_to_mongodb(&self, product_variant_id: Uuid) -> Result<(), Status> {
+        let product_variant = ProductVariant {
+            id: product_variant_id,
+        };
+        match self.collection.insert_one(product_variant, None).await {
+            Ok(_) => Ok(()),
+            Err(_) => Err(Status::internal(
+                "Adding product variant failed in MongoDB.",
+            )),
+        }
+    }
+}
 
 #[tonic::async_trait]
 impl AppCallback for AppCallbackService {
@@ -39,11 +60,17 @@ impl AppCallback for AppCallbackService {
     ) -> Result<Response<TopicEventResponse>, Status> {
         let r = request.into_inner();
         let data = &r.data;
-        let data_content_type = &r.data_content_type;
 
         let message = String::from_utf8_lossy(data);
+        let error_message = format!("Expected message to be parsable JSON, got: {}", message);
+        let message_json = json::parse(&message).map_err(|_| Status::internal(error_message))?;
+        let product_variant_id_json_value = &message_json["id"];
+        let product_variant_id = parse_product_variant_id(product_variant_id_json_value)?;
+
         println!("Message: {}", &message);
-        println!("Content-Type: {}", &data_content_type);
+
+        self.add_product_variant_to_mongodb(product_variant_id)
+            .await?;
 
         Ok(Response::new(TopicEventResponse::default()))
     }
@@ -62,5 +89,30 @@ impl AppCallback for AppCallbackService {
         _request: Request<BindingEventRequest>,
     ) -> Result<Response<BindingEventResponse>, Status> {
         Ok(Response::new(BindingEventResponse::default()))
+    }
+}
+
+/// Parses Uuid from JsonValue containing a String.
+fn parse_product_variant_id(product_variant_id_json_value: &JsonValue) -> Result<Uuid, Status> {
+    match product_variant_id_json_value {
+        json::JsonValue::String(product_variant_id_string) => {
+            match Uuid::parse_str(product_variant_id_string) {
+                Ok(product_variant_id_uuid) => Ok(product_variant_id_uuid),
+                Err(_) => {
+                    let error_message = format!(
+                        "String value in `id` field cannot be parsed as bson::Uuid, got: {}",
+                        product_variant_id_string
+                    );
+                    Err(Status::internal(error_message))?
+                }
+            }
+        }
+        _ => {
+            let error_message = format!(
+                "`id` field does not exist or does not contain a String value, got: {}",
+                product_variant_id_json_value
+            );
+            Err(Status::internal(error_message))?
+        }
     }
 }
