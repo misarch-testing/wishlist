@@ -1,7 +1,8 @@
 use std::{collections::HashSet, env, fs::File, io::Write};
 
-use simple_logger::SimpleLogger;
-use async_graphql::{extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
+use async_graphql::{
+    extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema,
+};
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
@@ -9,6 +10,7 @@ use axum::{
     Router, Server,
 };
 use clap::{arg, command, Parser};
+use simple_logger::SimpleLogger;
 
 use foreign_types::User;
 use log::info;
@@ -78,7 +80,7 @@ async fn dapr_connection(db_client: Database) {
         .add_service(AppCallbackServer::new(callback_service))
         .serve(addr)
         .await
-        .unwrap();    
+        .unwrap();
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.

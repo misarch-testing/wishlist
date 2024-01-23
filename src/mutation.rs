@@ -169,7 +169,7 @@ async fn update_name(
 }
 
 /// Checks if product variants are in the system (MongoDB database populated with events).
-/// 
+///
 /// Used before adding or modifying product variants.
 async fn validate_product_variant_ids(
     collection: &Collection<ProductVariant>,
@@ -186,12 +186,15 @@ async fn validate_product_variant_ids(
                 match product_variants.contains(&ProductVariant { _id: *p }) {
                     true => Ok(()),
                     false => {
-                        let message = format!("Product variant with the UUID: `{}` is not present in the system.", p);
+                        let message = format!(
+                            "Product variant with the UUID: `{}` is not present in the system.",
+                            p
+                        );
                         Err(Error::new(message))
                     }
                 }
             })
-        },
+        }
         Err(_) => Err(Error::new(
             "Product variants with the specified UUIDs are not present in the system.",
         )),
