@@ -1,4 +1,5 @@
 use json::JsonValue;
+use log::info;
 use mongodb::Collection;
 use tonic::{Request, Response, Status};
 
@@ -67,7 +68,7 @@ impl AppCallback for AppCallbackService {
         let product_variant_id_json_value = &message_json["id"];
         let product_variant_id = parse_product_variant_id(product_variant_id_json_value)?;
 
-        println!("Message: {}", &message);
+        info!("Event with message was received: {}", &message);
 
         self.add_product_variant_to_mongodb(product_variant_id)
             .await?;

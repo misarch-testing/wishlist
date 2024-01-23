@@ -1,6 +1,7 @@
 use std::{collections::HashSet, env, fs::File, io::Write};
 
-use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
+use simple_logger::SimpleLogger;
+use async_graphql::{extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
@@ -10,6 +11,7 @@ use axum::{
 use clap::{arg, command, Parser};
 
 use foreign_types::User;
+use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
@@ -70,14 +72,13 @@ async fn dapr_connection(db_client: Database) {
 
     let callback_service = AppCallbackService { collection };
 
+    info!("AppCallback server listening on: {}", addr);
     // Create a gRPC server with the callback_service.
     TonicServer::builder()
         .add_service(AppCallbackServer::new(callback_service))
         .serve(addr)
         .await
-        .unwrap();
-
-    println!("AppCallback server listening on: {}", addr);
+        .unwrap();    
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
@@ -103,8 +104,11 @@ struct Args {
     generate_schema: bool,
 }
 
+/// Activates logger and parses argument for optional schema generation. Otherwise starts gRPC and GraphQL server.
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    SimpleLogger::new().init().unwrap();
+
     let args = Args::parse();
     if args.generate_schema {
         let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
@@ -112,7 +116,7 @@ async fn main() -> std::io::Result<()> {
         let sdl_export_options = SDLExportOptions::new().federation();
         let schema_sdl = schema.sdl_with_options(sdl_export_options);
         file.write_all(schema_sdl.as_bytes())?;
-        println!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
+        info!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
     } else {
         start_service().await;
     }
@@ -125,6 +129,7 @@ async fn start_service() {
     let db_client: Database = client.database("wishlist-database");
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
+        .extension(Logger)
         .data(db_client.clone())
         .enable_federation()
         .finish();
@@ -132,11 +137,11 @@ async fn start_service() {
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
 
     let t1 = tokio::spawn(async {
+        info!("GraphiQL IDE: http://0.0.0.0:8080");
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())
             .await
             .unwrap();
-        println!("GraphiQL IDE: http://0.0.0.0:8080");
     });
 
     let t2 = tokio::spawn(async {
