@@ -8,7 +8,7 @@ use std::{cmp::Ordering, hash::Hash};
 #[graphql(unresolvable)]
 pub struct User {
     /// UUID of the user.
-    pub id: Uuid,
+    pub _id: Uuid,
 }
 
 /// Foreign type of a product variant.
@@ -16,17 +16,17 @@ pub struct User {
 #[graphql(unresolvable)]
 pub struct ProductVariant {
     /// UUID of the product variant.
-    pub id: Uuid,
+    pub _id: Uuid,
 }
 
 impl PartialOrd for ProductVariant {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.id.partial_cmp(&other.id)
+        self._id.partial_cmp(&other._id)
     }
 }
 
 impl From<ProductVariant> for Bson {
     fn from(value: ProductVariant) -> Self {
-        Bson::Document(doc!("id": value.id))
+        Bson::Document(doc!("id": value._id))
     }
 }

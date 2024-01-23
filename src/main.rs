@@ -85,7 +85,7 @@ async fn dapr_connection(db_client: Database) {
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
         _id: Uuid::new(),
-        user: User { id: Uuid::new() },
+        user: User { _id: Uuid::new() },
         internal_product_variants: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),

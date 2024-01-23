@@ -13,9 +13,9 @@ pub struct AppCallbackService {
 
 impl AppCallbackService {
     /// Add a newly created product variant to MongoDB.
-    async fn add_product_variant_to_mongodb(&self, product_variant_id: Uuid) -> Result<(), Status> {
+    pub async fn add_product_variant_to_mongodb(&self, product_variant_id: Uuid) -> Result<(), Status> {
         let product_variant = ProductVariant {
-            id: product_variant_id,
+            _id: product_variant_id,
         };
         match self.collection.insert_one(product_variant, None).await {
             Ok(_) => Ok(()),

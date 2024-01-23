@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use async_graphql::{Context, Error, Object, Result};
 use bson::Bson;
 use bson::Uuid;
+use futures::TryStreamExt;
 use mongodb::{
     bson::{doc, DateTime},
     Collection, Database,
@@ -37,12 +38,12 @@ impl Mutation {
         let normalized_product_variants: HashSet<ProductVariant> = input
             .product_variant_ids
             .iter()
-            .map(|id| ProductVariant { id: id.clone() })
+            .map(|id| ProductVariant { _id: id.clone() })
             .collect();
         let current_timestamp = DateTime::now();
         let wishlist = Wishlist {
             _id: Uuid::new(),
-            user: User { id: input.user_id },
+            user: User { _id: input.user_id },
             internal_product_variants: normalized_product_variants,
             name: input.name,
             created_at: current_timestamp,
@@ -129,7 +130,7 @@ async fn update_product_variant_ids(
             .await?;
         let normalized_product_variants: Vec<ProductVariant> = definitely_product_variant_ids
             .iter()
-            .map(|id| ProductVariant { id: id.clone() })
+            .map(|id| ProductVariant { _id: id.clone() })
             .collect();
         if let Err(_) = collection.update_one(doc!{"_id": input.id }, doc!{"$set": {"internal_product_variants": normalized_product_variants, "last_updated_at": current_timestamp}}, None).await {
             let message = format!("Updating product_variant_ids of wishlist of id: `{}` failed in MongoDB.", input.id);
@@ -176,17 +177,21 @@ async fn validate_product_variant_ids(
 ) -> Result<()> {
     let product_variant_ids_vec: Vec<Uuid> = product_variant_ids.clone().into_iter().collect();
     match collection
-        .find_one(doc! {"id": { "$in": product_variant_ids_vec } }, None)
+        .find(doc! {"_id": { "$in": &product_variant_ids_vec } }, None)
         .await
     {
-        Ok(maybe_result) => match maybe_result {
-            Some(result) => {
-                println!("{:?}", result);
-                Ok(())
-            }
-            None => Err(Error::new(
-                "Product variants with the specified UUIDs are not present in the system.",
-            )),
+        Ok(cursor) => {
+            let product_variants: Vec<ProductVariant> = cursor.try_collect().await?;
+            dbg!(&product_variants);
+            product_variant_ids_vec.iter().fold(Ok(()), |_, p| {
+                match product_variants.contains(&ProductVariant { _id: *p }) {
+                    true => Ok(()),
+                    false => {
+                        let message = format!("Product variant with the UUID: `{}` is not present in the system.", p);
+                        Err(Error::new(message))
+                    }
+                }
+            })
         },
         Err(_) => Err(Error::new(
             "Product variants with the specified UUIDs are not present in the system.",
