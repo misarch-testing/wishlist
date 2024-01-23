@@ -182,7 +182,6 @@ async fn validate_product_variant_ids(
     {
         Ok(cursor) => {
             let product_variants: Vec<ProductVariant> = cursor.try_collect().await?;
-            dbg!(&product_variants);
             product_variant_ids_vec.iter().fold(Ok(()), |_, p| {
                 match product_variants.contains(&ProductVariant { _id: *p }) {
                     true => Ok(()),
