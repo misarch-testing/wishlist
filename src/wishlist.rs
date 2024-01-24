@@ -9,9 +9,10 @@ use bson::Uuid;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    foreign_types::{ProductVariant, User},
+    foreign_types::ProductVariant,
     order_datatypes::{CommonOrderInput, OrderDirection},
     product_variant_connection::ProductVariantConnection,
+    user::User,
 };
 
 /// The Wishlist of a user.
@@ -37,11 +38,13 @@ impl Wishlist {
     /// Retrieves product variants.
     async fn product_variants(
         &self,
-        #[graphql(desc = "Describes that the `first` N wishlists should be retrieved.")]
+        #[graphql(desc = "Describes that the `first` N product variants should be retrieved.")]
         first: Option<usize>,
-        #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
+        #[graphql(
+            desc = "Describes how many product variants should be skipped at the beginning."
+        )]
         skip: Option<usize>,
-        #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
+        #[graphql(desc = "Specifies the order in which product variants are retrieved.")] order_by: Option<
             CommonOrderInput,
         >,
     ) -> Result<ProductVariantConnection> {

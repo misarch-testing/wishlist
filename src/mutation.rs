@@ -9,8 +9,9 @@ use mongodb::{
     Collection, Database,
 };
 
+use crate::user::User;
 use crate::{
-    foreign_types::{ProductVariant, User},
+    foreign_types::ProductVariant,
     mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
     query::query_wishlist,
     wishlist::Wishlist,

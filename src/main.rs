@@ -12,7 +12,6 @@ use axum::{
 use clap::{arg, command, Parser};
 use simple_logger::SimpleLogger;
 
-use foreign_types::User;
 use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
@@ -33,7 +32,10 @@ use mutation::Mutation;
 mod app_callback_service;
 use app_callback_service::AppCallbackService;
 
-use crate::foreign_types::ProductVariant;
+use foreign_types::ProductVariant;
+
+mod user;
+use user::User;
 
 mod base_connection;
 mod foreign_types;
