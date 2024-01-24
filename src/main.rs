@@ -79,6 +79,10 @@ async fn dapr_connection(db_client: Database) {
         product_variant_collection,
         user_collection,
     };
+    callback_service
+        .add_user_to_mongodb(Uuid::parse_str("cef15b33-b7f6-45ab-a697-cdf136ec5289").unwrap())
+        .await
+        .unwrap();
 
     info!("AppCallback server listening on: {}", addr);
     // Create a gRPC server with the callback_service.
