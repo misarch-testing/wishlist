@@ -1,6 +1,8 @@
 use std::{collections::HashSet, env, fs::File, io::Write};
 
-use async_graphql::{http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema};
+use async_graphql::{
+    extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema,
+};
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
@@ -8,8 +10,10 @@ use axum::{
     Router, Server,
 };
 use clap::{arg, command, Parser};
+use simple_logger::SimpleLogger;
 
 use foreign_types::User;
+use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
@@ -28,6 +32,8 @@ use mutation::Mutation;
 
 mod app_callback_service;
 use app_callback_service::AppCallbackService;
+
+use crate::foreign_types::ProductVariant;
 
 mod base_connection;
 mod foreign_types;
@@ -61,13 +67,14 @@ async fn db_connection() -> Client {
 /// Establishes connection to Dapr.
 ///
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
-async fn dapr_connection() {
-    let addr = "[::]:50006".parse().unwrap();
+async fn dapr_connection(db_client: Database) {
+    let addr = "[::]:50051".parse().unwrap();
+    let collection: mongodb::Collection<ProductVariant> =
+        db_client.collection::<ProductVariant>("product_variants");
 
-    let callback_service = AppCallbackService::default();
+    let callback_service = AppCallbackService { collection };
 
-    println!("AppCallback server listening on: {}", addr);
-
+    info!("AppCallback server listening on: {}", addr);
     // Create a gRPC server with the callback_service.
     TonicServer::builder()
         .add_service(AppCallbackServer::new(callback_service))
@@ -81,7 +88,7 @@ async fn dapr_connection() {
 async fn insert_dummy_data(collection: &Collection<Wishlist>) {
     let wishlists: Vec<Wishlist> = vec![Wishlist {
         _id: Uuid::new(),
-        user: User { id: Uuid::new() },
+        user: User { _id: Uuid::new() },
         internal_product_variants: HashSet::new(),
         name: String::from("test"),
         created_at: DateTime::now(),
@@ -99,8 +106,11 @@ struct Args {
     generate_schema: bool,
 }
 
+/// Activates logger and parses argument for optional schema generation. Otherwise starts gRPC and GraphQL server.
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    SimpleLogger::new().init().unwrap();
+
     let args = Args::parse();
     if args.generate_schema {
         let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
@@ -108,7 +118,7 @@ async fn main() -> std::io::Result<()> {
         let sdl_export_options = SDLExportOptions::new().federation();
         let schema_sdl = schema.sdl_with_options(sdl_export_options);
         file.write_all(schema_sdl.as_bytes())?;
-        println!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
+        info!("GraphQL schema: ./schemas/wishlist.graphql was successfully generated!");
     } else {
         start_service().await;
     }
@@ -119,17 +129,17 @@ async fn main() -> std::io::Result<()> {
 async fn start_service() {
     let client = db_connection().await;
     let db_client: Database = client.database("wishlist-database");
-    let collection: mongodb::Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
-        .data(collection)
+        .extension(Logger)
+        .data(db_client.clone())
         .enable_federation()
         .finish();
 
     let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    println!("GraphiQL IDE: http://0.0.0.0:8080");
 
     let t1 = tokio::spawn(async {
+        info!("GraphiQL IDE: http://0.0.0.0:8080");
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())
             .await
@@ -137,7 +147,7 @@ async fn start_service() {
     });
 
     let t2 = tokio::spawn(async {
-        dapr_connection().await;
+        dapr_connection(db_client).await;
     });
 
     t1.await.unwrap();

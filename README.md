@@ -12,25 +12,22 @@
 ### What it can do
 
 - CRUD wishlists:
-    ```rust
-    pub struct Wishlist {
-        pub id: Uuid,
-        pub user_id: Uuid,
-        pub product_variants: HashSet<ProductVariant>,
-        pub name: String,
-        pub created_at: DateTime,
-        pub last_updated_at: DateTime,
-    }
 
-    /// Foreign ProductVariant
-    pub struct ProductVariant{
-        id: Uuid
-    }
-    ```
+  ```rust
+  pub struct Wishlist {
+      pub id: Uuid,
+      pub user_id: Uuid,
+      pub product_variants: HashSet<ProductVariant>,
+      pub name: String,
+      pub created_at: DateTime,
+      pub last_updated_at: DateTime,
+  }
+
+  /// Foreign ProductVariant
+  pub struct ProductVariant{
+      id: Uuid
+  }
+  ```
+
 - Validates all UUIDs input as strings
 - Error prop to GraphQL
-
-### Configuration
-
-- The environment variables `${MONGODB_USERNAME}` and `${MONGODB_PASSWORD}` should be set in production to configure the database credentials.
-- `${MONGODB_URL}` can be reconfigured in `.env` for experimentation purposes.

@@ -3,9 +3,10 @@ use std::collections::HashSet;
 use async_graphql::{Context, Error, Object, Result};
 use bson::Bson;
 use bson::Uuid;
+use futures::TryStreamExt;
 use mongodb::{
     bson::{doc, DateTime},
-    Collection,
+    Collection, Database,
 };
 
 use crate::{
@@ -28,16 +29,21 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
     ) -> Result<Wishlist> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
+        let product_variant_collection: Collection<ProductVariant> =
+            db_client.collection::<ProductVariant>("product_variants");
+        validate_product_variant_ids(&product_variant_collection, &input.product_variant_ids)
+            .await?;
         let normalized_product_variants: HashSet<ProductVariant> = input
             .product_variant_ids
             .iter()
-            .map(|id| ProductVariant { id: id.clone() })
+            .map(|id| ProductVariant { _id: id.clone() })
             .collect();
         let current_timestamp = DateTime::now();
         let wishlist = Wishlist {
             _id: Uuid::new(),
-            user: User { id: input.user_id },
+            user: User { _id: input.user_id },
             internal_product_variants: normalized_product_variants,
             name: input.name,
             created_at: current_timestamp,
@@ -60,10 +66,18 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "UpdateWishlistInput")] input: UpdateWishlistInput,
     ) -> Result<Wishlist> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
-
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
+        let product_variant_collection: Collection<ProductVariant> =
+            db_client.collection::<ProductVariant>("product_variants");
         let current_timestamp = DateTime::now();
-        update_product_variant_ids(&collection, &input, &current_timestamp).await?;
+        update_product_variant_ids(
+            &collection,
+            &product_variant_collection,
+            &input,
+            &current_timestamp,
+        )
+        .await?;
         update_name(&collection, &input, &current_timestamp).await?;
         let wishlist = query_wishlist(&collection, input.id).await?;
         Ok(wishlist)
@@ -75,7 +89,8 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to delete.")] id: Uuid,
     ) -> Result<bool> {
-        let collection: &Collection<Wishlist> = ctx.data_unchecked::<Collection<Wishlist>>();
+        let db_client = ctx.data_unchecked::<Database>();
+        let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         if let Err(_) = collection.delete_one(doc! {"_id": id }, None).await {
             let message = format!("Deleting wishlist of id: `{}` failed in MongoDB.", id);
             return Err(Error::new(message));
@@ -106,13 +121,16 @@ fn uuid_from_bson(bson: Bson) -> Result<Uuid> {
 /// * `input` - `UpdateWishlistInput`.
 async fn update_product_variant_ids(
     collection: &Collection<Wishlist>,
+    product_variant_collection: &Collection<ProductVariant>,
     input: &UpdateWishlistInput,
     current_timestamp: &DateTime,
 ) -> Result<()> {
     if let Some(definitely_product_variant_ids) = &input.product_variant_ids {
+        validate_product_variant_ids(&product_variant_collection, definitely_product_variant_ids)
+            .await?;
         let normalized_product_variants: Vec<ProductVariant> = definitely_product_variant_ids
             .iter()
-            .map(|id| ProductVariant { id: id.clone() })
+            .map(|id| ProductVariant { _id: id.clone() })
             .collect();
         if let Err(_) = collection.update_one(doc!{"_id": input.id }, doc!{"$set": {"internal_product_variants": normalized_product_variants, "last_updated_at": current_timestamp}}, None).await {
             let message = format!("Updating product_variant_ids of wishlist of id: `{}` failed in MongoDB.", input.id);
@@ -148,4 +166,37 @@ async fn update_name(
         }
     }
     Ok(())
+}
+
+/// Checks if product variants are in the system (MongoDB database populated with events).
+///
+/// Used before adding or modifying product variants.
+async fn validate_product_variant_ids(
+    collection: &Collection<ProductVariant>,
+    product_variant_ids: &HashSet<Uuid>,
+) -> Result<()> {
+    let product_variant_ids_vec: Vec<Uuid> = product_variant_ids.clone().into_iter().collect();
+    match collection
+        .find(doc! {"_id": { "$in": &product_variant_ids_vec } }, None)
+        .await
+    {
+        Ok(cursor) => {
+            let product_variants: Vec<ProductVariant> = cursor.try_collect().await?;
+            product_variant_ids_vec.iter().fold(Ok(()), |_, p| {
+                match product_variants.contains(&ProductVariant { _id: *p }) {
+                    true => Ok(()),
+                    false => {
+                        let message = format!(
+                            "Product variant with the UUID: `{}` is not present in the system.",
+                            p
+                        );
+                        Err(Error::new(message))
+                    }
+                }
+            })
+        }
+        Err(_) => Err(Error::new(
+            "Product variants with the specified UUIDs are not present in the system.",
+        )),
+    }
 }
