@@ -9,8 +9,9 @@ pub struct Query;
 
 #[Object]
 impl Query {
-    /// Retrieve user with wishlists.
-    async fn user<'a>(
+    /// Entity resolver for user of specific id.
+    #[graphql(entity)]
+    async fn user_entity_resolver<'a>(
         &self,
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of user to retrieve.")] id: Uuid,
@@ -31,7 +32,7 @@ impl Query {
         query_wishlist(&collection, id).await
     }
 
-    /// Entity resolver for wishlist of specific key.
+    /// Entity resolver for wishlist of specific id.
     #[graphql(entity)]
     async fn wishlist_entity_resolver<'a>(
         &self,
