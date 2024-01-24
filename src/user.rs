@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     base_connection::{BaseConnection, FindResultWrapper},
-    order_datatypes::CommonOrderInput,
+    order_datatypes::WishlistOrderInput,
     wishlist::Wishlist,
     wishlist_connection::WishlistConnection,
 };
@@ -30,7 +30,7 @@ impl User {
         #[graphql(desc = "Describes how many wishlists should be skipped at the beginning.")]
         skip: Option<u64>,
         #[graphql(desc = "Specifies the order in which wishlists are retrieved.")] order_by: Option<
-            CommonOrderInput,
+            WishlistOrderInput,
         >,
     ) -> Result<WishlistConnection> {
         let db_client = ctx.data_unchecked::<Database>();
