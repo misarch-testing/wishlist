@@ -15,14 +15,13 @@ pub struct AppCallbackService {
 
 impl AppCallbackService {
     /// Add a newly created product variant to MongoDB.
-    pub async fn add_product_variant_to_mongodb(
-        &self,
-        id: Uuid,
-    ) -> Result<(), Status> {
-        let product_variant = ProductVariant {
-            _id: id,
-        };
-        match self.product_variant_collection.insert_one(product_variant, None).await {
+    pub async fn add_product_variant_to_mongodb(&self, id: Uuid) -> Result<(), Status> {
+        let product_variant = ProductVariant { _id: id };
+        match self
+            .product_variant_collection
+            .insert_one(product_variant, None)
+            .await
+        {
             Ok(_) => Ok(()),
             Err(_) => Err(Status::internal(
                 "Adding product variant failed in MongoDB.",
@@ -59,10 +58,16 @@ impl AppCallback for AppCallbackService {
         &self,
         _request: Request<()>,
     ) -> Result<Response<ListTopicSubscriptionsResponse>, Status> {
-        let topic = "catalog/product-variant/created".to_string();
+        let product_variant_topic = "catalog/product-variant/created".to_string();
+        let user_topic = "user/user/created".to_string();
         let pubsub_name = "pubsub".to_string();
+        let user_topic_subscription = TopicSubscription::new(pubsub_name.clone(), user_topic, None);
 
-        let list_subscriptions = ListTopicSubscriptionsResponse::topic(pubsub_name, topic);
+        let mut list_subscriptions =
+            ListTopicSubscriptionsResponse::topic(pubsub_name, product_variant_topic);
+        list_subscriptions
+            .subscriptions
+            .push(user_topic_subscription);
 
         Ok(Response::new(list_subscriptions))
     }
