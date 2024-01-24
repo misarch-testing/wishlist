@@ -71,10 +71,18 @@ async fn db_connection() -> Client {
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
 async fn dapr_connection(db_client: Database) {
     let addr = "[::]:50051".parse().unwrap();
-    let collection: mongodb::Collection<ProductVariant> =
+    let product_variant_collection: mongodb::Collection<ProductVariant> =
         db_client.collection::<ProductVariant>("product_variants");
+    let user_collection: mongodb::Collection<User> = db_client.collection::<User>("users");
 
-    let callback_service = AppCallbackService { collection };
+    let callback_service = AppCallbackService {
+        product_variant_collection,
+        user_collection,
+    };
+    callback_service
+        .add_user_to_mongodb(Uuid::parse_str("cef15b33-b7f6-45ab-a697-cdf136ec5289").unwrap())
+        .await
+        .unwrap();
 
     info!("AppCallback server listening on: {}", addr);
     // Create a gRPC server with the callback_service.

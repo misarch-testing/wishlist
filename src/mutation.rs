@@ -9,6 +9,7 @@ use mongodb::{
     Collection, Database,
 };
 
+use crate::query::query_user;
 use crate::user::User;
 use crate::{
     foreign_types::ProductVariant,
@@ -32,10 +33,7 @@ impl Mutation {
     ) -> Result<Wishlist> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
-        let product_variant_collection: Collection<ProductVariant> =
-            db_client.collection::<ProductVariant>("product_variants");
-        validate_product_variant_ids(&product_variant_collection, &input.product_variant_ids)
-            .await?;
+        validate_input(db_client, &input).await?;
         let normalized_product_variants: HashSet<ProductVariant> = input
             .product_variant_ids
             .iter()
@@ -169,9 +167,19 @@ async fn update_name(
     Ok(())
 }
 
+/// Checks if product variants and user in AddWishlistInput are in the system (MongoDB database populated with events).
+async fn validate_input(db_client: &Database, input: &AddWishlistInput) -> Result<()> {
+    let product_variant_collection: Collection<ProductVariant> =
+        db_client.collection::<ProductVariant>("product_variants");
+    let user_collection: Collection<User> = db_client.collection::<User>("users");
+    validate_product_variant_ids(&product_variant_collection, &input.product_variant_ids).await?;
+    validate_user(&user_collection, input.user_id).await?;
+    Ok(())
+}
+
 /// Checks if product variants are in the system (MongoDB database populated with events).
 ///
-/// Used before adding or modifying product variants.
+/// Used before adding or modifying product variants / wishlists.
 async fn validate_product_variant_ids(
     collection: &Collection<ProductVariant>,
     product_variant_ids: &HashSet<Uuid>,
@@ -200,4 +208,11 @@ async fn validate_product_variant_ids(
             "Product variants with the specified UUIDs are not present in the system.",
         )),
     }
+}
+
+/// Checks if user is in the system (MongoDB database populated with events).
+///
+/// Used before adding wishlists.
+async fn validate_user(collection: &Collection<User>, id: Uuid) -> Result<()> {
+    query_user(&collection, id).await.map(|_| ())
 }
