@@ -15,9 +15,6 @@ use simple_logger::SimpleLogger;
 use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
-use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
-use tonic::transport::Server as TonicServer;
-
 use bson::Uuid;
 use wishlist::Wishlist;
 
@@ -30,12 +27,15 @@ mod mutation;
 use mutation::Mutation;
 
 mod app_callback_service;
-use app_callback_service::AppCallbackService;
 
 use foreign_types::ProductVariant;
 
 mod user;
 use user::User;
+
+use crate::http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
+
+mod http_event_service;
 
 mod base_connection;
 mod foreign_types;
@@ -70,21 +70,22 @@ async fn db_connection() -> Client {
 ///
 /// Adds AppCallbackService which defines pub/sub interaction with Dapr.
 async fn dapr_connection(db_client: Database) {
-    let addr = "[::]:50051".parse().unwrap();
     let product_variant_collection: mongodb::Collection<ProductVariant> =
         db_client.collection::<ProductVariant>("product_variants");
     let user_collection: mongodb::Collection<User> = db_client.collection::<User>("users");
 
-    let callback_service = AppCallbackService {
-        product_variant_collection,
-        user_collection,
-    };
+    // Define Routes
+    let app = Router::new()
+        .route("/dapr/subscribe", get(list_topic_subscriptions))
+        .route("/on-topic-event", get(on_topic_event))
+        .with_state(HttpEventServiceState {
+            product_variant_collection,
+            user_collection,
+        });
 
-    info!("AppCallback server listening on: {}", addr);
-    // Create a gRPC server with the callback_service.
-    TonicServer::builder()
-        .add_service(AppCallbackServer::new(callback_service))
-        .serve(addr)
+    println!("Running on http://localhost:50051");
+    axum::Server::bind(&"127.0.0.1:50051".parse().unwrap())
+        .serve(app.into_make_service())
         .await
         .unwrap();
 }
