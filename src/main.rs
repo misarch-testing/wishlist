@@ -10,7 +10,7 @@ use axum::{
     Router, Server,
 };
 use clap::{arg, command, Parser};
-use http_event_service::Event;
+
 use simple_logger::SimpleLogger;
 
 use log::info;
