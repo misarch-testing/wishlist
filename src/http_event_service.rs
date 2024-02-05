@@ -63,7 +63,7 @@ pub async fn on_topic_event(
 ) -> Result<Json<TopicEventResponse>, StatusCode> {
     info!("{:?}", event);
 
-    match event.data.id.to_string().as_str() {
+    match event.topic.as_str() {
         "catalog/product-variant/created" => {
             add_product_variant_to_mongodb(state.product_variant_collection, event.data.id).await?
         }
