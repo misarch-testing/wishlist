@@ -6,10 +6,11 @@ use async_graphql::{
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
-    routing::get,
+    routing::{get, post},
     Router, Server,
 };
 use clap::{arg, command, Parser};
+use http_event_service::Event;
 use simple_logger::SimpleLogger;
 
 use log::info;
@@ -77,7 +78,7 @@ async fn build_dapr_router(db_client: Database) -> Router {
     // Define routes.
     let app = Router::new()
         .route("/dapr/subscribe", get(list_topic_subscriptions))
-        .route("/on-topic-event", get(on_topic_event))
+        .route("/on-topic-event", post(on_topic_event))
         .with_state(HttpEventServiceState {
             product_variant_collection,
             user_collection,

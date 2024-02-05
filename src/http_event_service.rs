@@ -8,23 +8,10 @@ use crate::{foreign_types::ProductVariant, user::User};
 
 #[derive(Serialize)]
 pub struct Pubsub {
+    #[serde(rename(serialize = "pubsubName"))]
     pub pubsubname: String,
     pub topic: String,
-    pub routes: Vec<Route>,
-}
-
-#[derive(Serialize)]
-pub struct Route {
-    pub rules: Vec<Rule>,
-    pub default: String,
-}
-
-#[derive(Serialize)]
-pub struct Rule {
-    // Needs to be renamed because it is a rust keyword.
-    #[serde(rename(serialize = "match"))]
-    pub match_field: String,
-    pub path: String,
+    pub route: String,
 }
 
 #[derive(Serialize)]
@@ -40,8 +27,13 @@ impl Default for TopicEventResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct Event {
-    pub id: Uuid,
     pub topic: String,
+    pub data: EventData,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct EventData {
+    pub id: Uuid,
 }
 
 #[derive(Clone)]
@@ -54,18 +46,12 @@ pub async fn list_topic_subscriptions() -> Result<Json<Vec<Pubsub>>, StatusCode>
     let pubsub_user = Pubsub {
         pubsubname: "pubsub".to_string(),
         topic: "user/user/created".to_string(),
-        routes: vec![Route {
-            rules: vec![],
-            default: "/on-topic-event".to_string(), // TODO: Check if this is really the right value.
-        }],
+        route: "/on-topic-event".to_string(),
     };
     let pubsub_product_variant = Pubsub {
         pubsubname: "pubsub".to_string(),
         topic: "catalog/product-variant/created".to_string(),
-        routes: vec![Route {
-            rules: vec![],
-            default: "catalog/product-variant/created".to_string(), // TODO: Check if this is really the right value.
-        }],
+        route: "/on-topic-event".to_string(),
     };
     Ok(Json(vec![pubsub_user, pubsub_product_variant]))
 }
@@ -77,15 +63,15 @@ pub async fn on_topic_event(
 ) -> Result<Json<TopicEventResponse>, StatusCode> {
     info!("{:?}", event);
 
-    match event.id.to_string().as_str() {
+    match event.data.id.to_string().as_str() {
         "catalog/product-variant/created" => {
-            add_product_variant_to_mongodb(state.product_variant_collection, event.id).await?
+            add_product_variant_to_mongodb(state.product_variant_collection, event.data.id).await?
         }
-        "user/user/created" => add_user_to_mongodb(state.user_collection, event.id).await?,
+        "user/user/created" => add_user_to_mongodb(state.user_collection, event.data.id).await?,
         _ => {
-            // TODO: This message can be used for further visibility.
+            // TODO: This message can be used for further Error visibility.
             let _message = format!(
-                "Event of topic: `{}` is not a handable by this service.",
+                "Event of topic: `{}` is not a handleable by this service.",
                 event.topic.as_str()
             );
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
