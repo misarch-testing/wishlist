@@ -6,17 +6,15 @@ use async_graphql::{
 use async_graphql_axum::GraphQL;
 use axum::{
     response::{self, IntoResponse},
-    routing::get,
+    routing::{get, post},
     Router, Server,
 };
 use clap::{arg, command, Parser};
+
 use simple_logger::SimpleLogger;
 
 use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
-
-use dapr::dapr::dapr::proto::runtime::v1::app_callback_server::AppCallbackServer;
-use tonic::transport::Server as TonicServer;
 
 use bson::Uuid;
 use wishlist::Wishlist;
@@ -30,12 +28,15 @@ mod mutation;
 use mutation::Mutation;
 
 mod app_callback_service;
-use app_callback_service::AppCallbackService;
 
 use foreign_types::ProductVariant;
 
 mod user;
 use user::User;
+
+use crate::http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
+
+mod http_event_service;
 
 mod base_connection;
 mod foreign_types;
@@ -66,27 +67,23 @@ async fn db_connection() -> Client {
     Client::with_options(client_options).unwrap()
 }
 
-/// Establishes connection to Dapr.
+/// Returns Router that establishes connection to Dapr.
 ///
-/// Adds AppCallbackService which defines pub/sub interaction with Dapr.
-async fn dapr_connection(db_client: Database) {
-    let addr = "[::]:50051".parse().unwrap();
+/// Adds endpoints to define pub/sub interaction with Dapr.
+async fn build_dapr_router(db_client: Database) -> Router {
     let product_variant_collection: mongodb::Collection<ProductVariant> =
         db_client.collection::<ProductVariant>("product_variants");
     let user_collection: mongodb::Collection<User> = db_client.collection::<User>("users");
 
-    let callback_service = AppCallbackService {
-        product_variant_collection,
-        user_collection,
-    };
-
-    info!("AppCallback server listening on: {}", addr);
-    // Create a gRPC server with the callback_service.
-    TonicServer::builder()
-        .add_service(AppCallbackServer::new(callback_service))
-        .serve(addr)
-        .await
-        .unwrap();
+    // Define routes.
+    let app = Router::new()
+        .route("/dapr/subscribe", get(list_topic_subscriptions))
+        .route("/on-topic-event", post(on_topic_event))
+        .with_state(HttpEventServiceState {
+            product_variant_collection,
+            user_collection,
+        });
+    app
 }
 
 /// Can be used to insert dummy wishlist data in the MongoDB database.
@@ -142,20 +139,13 @@ async fn start_service() {
         .enable_federation()
         .finish();
 
-    let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
+    let graphiql = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
+    let dapr_router = build_dapr_router(db_client).await;
+    let app = Router::new().merge(graphiql).merge(dapr_router);
 
-    let t1 = tokio::spawn(async {
-        info!("GraphiQL IDE: http://0.0.0.0:8080");
-        Server::bind(&"0.0.0.0:8080".parse().unwrap())
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
-    });
-
-    let t2 = tokio::spawn(async {
-        dapr_connection(db_client).await;
-    });
-
-    t1.await.unwrap();
-    t2.await.unwrap();
+    info!("GraphiQL IDE: http://0.0.0.0:8080");
+    Server::bind(&"0.0.0.0:8080".parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
