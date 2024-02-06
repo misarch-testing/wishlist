@@ -27,16 +27,13 @@ use query::Query;
 mod mutation;
 use mutation::Mutation;
 
-mod app_callback_service;
-
 use foreign_types::ProductVariant;
 
 mod user;
 use user::User;
 
-use crate::http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
-
 mod http_event_service;
+use http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
 
 mod base_connection;
 mod foreign_types;
