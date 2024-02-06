@@ -64,7 +64,7 @@ pub async fn list_topic_subscriptions() -> Result<Json<Vec<Pubsub>>, StatusCode>
 }
 
 
-/// HTTP endpoint to receive events..
+/// HTTP endpoint to receive events.
 #[debug_handler(state = HttpEventServiceState)]
 pub async fn on_topic_event(
     State(state): State<HttpEventServiceState>,
