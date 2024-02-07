@@ -1,4 +1,4 @@
-use crate::{user::User, Wishlist};
+use crate::{authentication::authenticate_user, user::User, Wishlist};
 use async_graphql::{Context, Error, Object, Result};
 
 use bson::Uuid;
@@ -10,7 +10,7 @@ pub struct Query;
 #[Object]
 impl Query {
     /// Entity resolver for user of specific id.
-    #[graphql(entity)]
+    //#[graphql(entity)]
     async fn user_entity_resolver<'a>(
         &self,
         ctx: &Context<'a>,
@@ -18,6 +18,7 @@ impl Query {
     ) -> Result<User> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<User> = db_client.collection::<User>("users");
+        authenticate_user(&ctx, id)?;
         query_user(&collection, id).await
     }
 
@@ -29,7 +30,9 @@ impl Query {
     ) -> Result<Wishlist> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
-        query_wishlist(&collection, id).await
+        let wishlist = query_wishlist(&collection, id).await?;
+        authenticate_user(&ctx, wishlist.user._id)?;
+        Ok(wishlist)
     }
 
     /// Entity resolver for wishlist of specific id.
@@ -41,7 +44,9 @@ impl Query {
     ) -> Result<Wishlist> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
-        query_wishlist(&collection, id).await
+        let wishlist = query_wishlist(&collection, id).await?;
+        authenticate_user(&ctx, wishlist.user._id)?;
+        Ok(wishlist)
     }
 }
 

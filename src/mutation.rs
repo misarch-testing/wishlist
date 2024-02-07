@@ -9,6 +9,7 @@ use mongodb::{
     Collection, Database,
 };
 
+use crate::authentication::authenticate_user;
 use crate::query::query_user;
 use crate::user::User;
 use crate::{
@@ -31,6 +32,7 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
     ) -> Result<Wishlist> {
+        authenticate_user(&ctx, input.user_id)?;
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         validate_input(db_client, &input).await?;
@@ -67,6 +69,8 @@ impl Mutation {
     ) -> Result<Wishlist> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
+        let wishlist = query_wishlist(&collection, input.id).await?;
+        authenticate_user(&ctx, wishlist.user._id)?;
         let product_variant_collection: Collection<ProductVariant> =
             db_client.collection::<ProductVariant>("product_variants");
         let current_timestamp = DateTime::now();
@@ -78,8 +82,7 @@ impl Mutation {
         )
         .await?;
         update_name(&collection, &input, &current_timestamp).await?;
-        let wishlist = query_wishlist(&collection, input.id).await?;
-        Ok(wishlist)
+        query_wishlist(&collection, input.id).await
     }
 
     /// Deletes wishlist of id.
@@ -90,6 +93,8 @@ impl Mutation {
     ) -> Result<bool> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
+        let wishlist = query_wishlist(&collection, id).await?;
+        authenticate_user(&ctx, wishlist.user._id)?;
         if let Err(_) = collection.delete_one(doc! {"_id": id }, None).await {
             let message = format!("Deleting wishlist of id: `{}` failed in MongoDB.", id);
             return Err(Error::new(message));

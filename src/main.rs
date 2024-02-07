@@ -4,6 +4,7 @@ use async_graphql::{
     extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema,
 };
 use async_graphql_axum::GraphQL;
+use authentication::AuthenticateUserHeader;
 use axum::{
     response::{self, IntoResponse},
     routing::{get, post},
@@ -17,9 +18,23 @@ use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 use bson::Uuid;
-use wishlist::Wishlist;
+
+//- -
+use async_graphql::{
+    http::{playground_source, GraphQLPlaygroundConfig, ALL_WEBSOCKET_PROTOCOLS},
+    EmptyMutation,
+};
+use async_graphql_axum::{GraphQLProtocol, GraphQLRequest, GraphQLResponse, GraphQLWebSocket};
+use axum::{
+    extract::{ws::WebSocketUpgrade, State},
+    http::header::HeaderMap,
+    response::{Html, Response},
+};
+use tokio::net::TcpListener;
+// - -
 
 mod wishlist;
+use wishlist::Wishlist;
 
 mod query;
 use query::Query;
@@ -34,6 +49,8 @@ use user::User;
 
 mod http_event_service;
 use http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
+
+mod authentication;
 
 mod base_connection;
 mod foreign_types;
@@ -125,6 +142,18 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+async fn graphql_handler(
+    State(schema): State<Schema<Query, Mutation, EmptySubscription>>,
+    headers: HeaderMap,
+    req: GraphQLRequest,
+) -> GraphQLResponse {
+    let mut req = req.into_inner();
+    if let Ok(authenticate_user_header) = AuthenticateUserHeader::try_from(&headers) {
+        req = req.data(authenticate_user_header);
+    }
+    schema.execute(req).await.into()
+}
+
 /// Starts wishlist service on port 8000.
 async fn start_service() {
     let client = db_connection().await;
@@ -136,7 +165,9 @@ async fn start_service() {
         .enable_federation()
         .finish();
 
-    let graphiql = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
+    let graphiql = Router::new()
+        .route("/", get(graphiql).post(graphql_handler))
+        .with_state(schema);
     let dapr_router = build_dapr_router(db_client).await;
     let app = Router::new().merge(graphiql).merge(dapr_router);
 
