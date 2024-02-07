@@ -16,9 +16,7 @@ impl TryFrom<&HeaderMap> for AuthenticateUserHeader {
 
     fn try_from(header_map: &HeaderMap) -> Result<Self, Self::Error> {
         if let Some(authenticate_user_header_value) = header_map.get("Authenticate-User") {
-            dbg!(&authenticate_user_header_value);
             if let Ok(authenticate_user_header_str) = authenticate_user_header_value.to_str() {
-                dbg!(&authenticate_user_header_str);
                 let authenticate_user_header: AuthenticateUserHeader =
                     serde_json::from_str(authenticate_user_header_str)?;
                 return Ok(authenticate_user_header);

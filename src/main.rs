@@ -3,9 +3,12 @@ use std::{collections::HashSet, env, fs::File, io::Write};
 use async_graphql::{
     extensions::Logger, http::GraphiQLSource, EmptySubscription, SDLExportOptions, Schema,
 };
-use async_graphql_axum::GraphQL;
-use authentication::AuthenticateUserHeader;
+
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+
 use axum::{
+    extract::State,
+    http::header::HeaderMap,
     response::{self, IntoResponse},
     routing::{get, post},
     Router, Server,
@@ -18,20 +21,6 @@ use log::info;
 use mongodb::{bson::DateTime, options::ClientOptions, Client, Collection, Database};
 
 use bson::Uuid;
-
-//- -
-use async_graphql::{
-    http::{playground_source, GraphQLPlaygroundConfig, ALL_WEBSOCKET_PROTOCOLS},
-    EmptyMutation,
-};
-use async_graphql_axum::{GraphQLProtocol, GraphQLRequest, GraphQLResponse, GraphQLWebSocket};
-use axum::{
-    extract::{ws::WebSocketUpgrade, State},
-    http::header::HeaderMap,
-    response::{Html, Response},
-};
-use tokio::net::TcpListener;
-// - -
 
 mod wishlist;
 use wishlist::Wishlist;
@@ -51,6 +40,7 @@ mod http_event_service;
 use http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
 
 mod authentication;
+use authentication::AuthenticateUserHeader;
 
 mod base_connection;
 mod foreign_types;
