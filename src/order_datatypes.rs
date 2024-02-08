@@ -43,7 +43,7 @@ pub enum WishlistOrderField {
 impl WishlistOrderField {
     pub fn as_str(&self) -> &'static str {
         match self {
-            WishlistOrderField::Id => "_id",
+            WishlistOrderField::Id => "id",
             WishlistOrderField::UserId => "user_id",
             WishlistOrderField::Name => "name",
             WishlistOrderField::CreatedAt => "created_at",
