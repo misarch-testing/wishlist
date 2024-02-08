@@ -132,6 +132,10 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+/// Describes the handler for GraphQL requests.
+///
+/// Parses the "Authenticate-User" header and writes it in the context data of the specfic request.
+/// Then executes the GraphQL schema with the request.
 async fn graphql_handler(
     State(schema): State<Schema<Query, Mutation, EmptySubscription>>,
     headers: HeaderMap,

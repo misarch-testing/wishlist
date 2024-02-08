@@ -5,6 +5,7 @@ use mongodb_cursor_pagination::{error::CursorError, FindResult, PaginatedCursor}
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    authentication::authenticate_user,
     base_connection::{BaseConnection, FindResultWrapper},
     order_datatypes::WishlistOrderInput,
     wishlist::Wishlist,
@@ -33,6 +34,7 @@ impl User {
             WishlistOrderInput,
         >,
     ) -> Result<WishlistConnection> {
+        authenticate_user(&ctx, self._id)?;
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist_order = order_by.unwrap_or_default();

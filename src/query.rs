@@ -18,7 +18,6 @@ impl Query {
     ) -> Result<User> {
         let db_client = ctx.data_unchecked::<Database>();
         let collection: Collection<User> = db_client.collection::<User>("users");
-        authenticate_user(&ctx, id)?;
         query_user(&collection, id).await
     }
 
