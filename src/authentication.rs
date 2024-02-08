@@ -60,7 +60,7 @@ pub fn authenticate_user(ctx: &Context, id: Uuid) -> Result<()> {
 // Check if user of UUID has a valid permission according to the AuthenticateUserHeader.
 //
 // Permission is valid if the user has `Role::Buyer` and the same UUID as provided in the function parameter.
-// Permission is valid if the user has a permissive role: `user.is_permissive() == true`, regardless of users the UUID.
+// Permission is valid if the user has a permissive role: `user.is_permissive() == true`, regardless of the users UUID.
 pub fn check_permissions(
     authenticate_user_header: &AuthenticateUserHeader,
     id: Uuid,
