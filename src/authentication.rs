@@ -53,7 +53,7 @@ impl Role {
 pub fn authenticate_user(ctx: &Context, id: Uuid) -> Result<()> {
     match ctx.data::<AuthorizedUserHeader>() {
         Ok(authenticate_user_header) => check_permissions(&authenticate_user_header, id),
-        Err(_) => Err(Error::new("Authorized-User header could not be parsed.")),
+        Err(_) => Err(Error::new("Authentication failed. Authorized-User header is not set or could not be parsed.")),
     }
 }
 
