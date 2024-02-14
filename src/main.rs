@@ -40,7 +40,7 @@ mod http_event_service;
 use http_event_service::{list_topic_subscriptions, on_topic_event, HttpEventServiceState};
 
 mod authentication;
-use authentication::AuthenticateUserHeader;
+use authentication::AuthorizedUserHeader;
 
 mod base_connection;
 mod foreign_types;
@@ -142,7 +142,7 @@ async fn graphql_handler(
     req: GraphQLRequest,
 ) -> GraphQLResponse {
     let mut req = req.into_inner();
-    if let Ok(authenticate_user_header) = AuthenticateUserHeader::try_from(&headers) {
+    if let Ok(authenticate_user_header) = AuthorizedUserHeader::try_from(&headers) {
         req = req.data(authenticate_user_header);
     }
     schema.execute(req).await.into()

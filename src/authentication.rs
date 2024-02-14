@@ -3,29 +3,29 @@ use axum::http::HeaderMap;
 use bson::Uuid;
 use serde::Deserialize;
 
-// Authenticate-User HTTP header.
+// Authorized-User HTTP header.
 #[derive(Deserialize, Debug)]
-pub struct AuthenticateUserHeader {
+pub struct AuthorizedUserHeader {
     id: Uuid,
     roles: Vec<Role>,
 }
 
-// Extraction of AuthenticateUserHeader from HeaderMap.
-impl TryFrom<&HeaderMap> for AuthenticateUserHeader {
+// Extraction of AuthorizedUserHeader from HeaderMap.
+impl TryFrom<&HeaderMap> for AuthorizedUserHeader {
     type Error = Error;
 
-    // Tries to extract the AuthenticateUserHeader from a HeaderMap.
+    // Tries to extract the AuthorizedUserHeader from a HeaderMap.
     //
     // Returns a GraphQL Error if the extraction fails.
     fn try_from(header_map: &HeaderMap) -> Result<Self, Self::Error> {
-        if let Some(authenticate_user_header_value) = header_map.get("Authenticate-User") {
+        if let Some(authenticate_user_header_value) = header_map.get("Authorized-User") {
             if let Ok(authenticate_user_header_str) = authenticate_user_header_value.to_str() {
-                let authenticate_user_header: AuthenticateUserHeader =
+                let authenticate_user_header: AuthorizedUserHeader =
                     serde_json::from_str(authenticate_user_header_str)?;
                 return Ok(authenticate_user_header);
             }
         }
-        Err(Error::new("Authenticate-User header could not be parsed."))
+        Err(Error::new("Authorized-User header could not be parsed."))
     }
 }
 
@@ -51,18 +51,18 @@ impl Role {
 
 // Authenticate user of UUID for a Context.
 pub fn authenticate_user(ctx: &Context, id: Uuid) -> Result<()> {
-    match ctx.data::<AuthenticateUserHeader>() {
+    match ctx.data::<AuthorizedUserHeader>() {
         Ok(authenticate_user_header) => check_permissions(&authenticate_user_header, id),
-        Err(_) => Err(Error::new("Authenticate-User header could not be parsed.")),
+        Err(_) => Err(Error::new("Authorized-User header could not be parsed.")),
     }
 }
 
-// Check if user of UUID has a valid permission according to the AuthenticateUserHeader.
+// Check if user of UUID has a valid permission according to the AuthorizedUserHeader.
 //
 // Permission is valid if the user has `Role::Buyer` and the same UUID as provided in the function parameter.
 // Permission is valid if the user has a permissive role: `user.is_permissive() == true`, regardless of the users UUID.
 pub fn check_permissions(
-    authenticate_user_header: &AuthenticateUserHeader,
+    authenticate_user_header: &AuthorizedUserHeader,
     id: Uuid,
 ) -> Result<()> {
     if authenticate_user_header
