@@ -44,7 +44,7 @@ impl WishlistOrderField {
     pub fn as_str(&self) -> &'static str {
         match self {
             WishlistOrderField::Id => "_id",
-            WishlistOrderField::UserId => "user_id",
+            WishlistOrderField::UserId => "user._id",
             WishlistOrderField::Name => "name",
             WishlistOrderField::CreatedAt => "created_at",
             WishlistOrderField::LastUpdatedAt => "last_updated_at",
