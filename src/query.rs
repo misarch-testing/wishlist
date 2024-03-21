@@ -16,7 +16,7 @@ impl Query {
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of user to retrieve.")] id: Uuid,
     ) -> Result<User> {
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<User> = db_client.collection::<User>("users");
         query_user(&collection, id).await
     }
@@ -27,7 +27,7 @@ impl Query {
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist = query_wishlist(&collection, id).await?;
         authenticate_user(&ctx, wishlist.user._id)?;
@@ -41,7 +41,7 @@ impl Query {
         ctx: &Context<'a>,
         #[graphql(key, desc = "UUID of wishlist to retrieve.")] id: Uuid,
     ) -> Result<Wishlist> {
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist = query_wishlist(&collection, id).await?;
         authenticate_user(&ctx, wishlist.user._id)?;
@@ -58,12 +58,12 @@ pub async fn query_wishlist(collection: &Collection<Wishlist>, id: Uuid) -> Resu
         Ok(maybe_wishlist) => match maybe_wishlist {
             Some(wishlist) => Ok(wishlist),
             None => {
-                let message = format!("Wishlist with UUID id: `{}` not found.", id);
+                let message = format!("Wishlist with UUID: `{}` not found.", id);
                 Err(Error::new(message))
             }
         },
         Err(_) => {
-            let message = format!("Wishlist with UUID id: `{}` not found.", id);
+            let message = format!("Wishlist with UUID: `{}` not found.", id);
             Err(Error::new(message))
         }
     }
@@ -78,12 +78,12 @@ pub async fn query_user(collection: &Collection<User>, id: Uuid) -> Result<User>
         Ok(maybe_user) => match maybe_user {
             Some(user) => Ok(user),
             None => {
-                let message = format!("User with UUID id: `{}` not found.", id);
+                let message = format!("User with UUID: `{}` not found.", id);
                 Err(Error::new(message))
             }
         },
         Err(_) => {
-            let message = format!("User with UUID id: `{}` not found.", id);
+            let message = format!("User with UUID: `{}` not found.", id);
             Err(Error::new(message))
         }
     }

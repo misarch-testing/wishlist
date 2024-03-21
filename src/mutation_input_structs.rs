@@ -3,7 +3,7 @@ use bson::Uuid;
 use std::collections::HashSet;
 
 #[derive(SimpleObject, InputObject)]
-pub struct AddWishlistInput {
+pub struct CreateWishlistInput {
     /// UUID of user owning the wishlist.
     pub user_id: Uuid,
     /// UUIDs of product variants in wishlist.
