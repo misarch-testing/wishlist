@@ -14,7 +14,7 @@ use crate::query::query_user;
 use crate::user::User;
 use crate::{
     foreign_types::ProductVariant,
-    mutation_input_structs::{AddWishlistInput, UpdateWishlistInput},
+    mutation_input_structs::{CreateWishlistInput, UpdateWishlistInput},
     query::query_wishlist,
     wishlist::Wishlist,
 };
@@ -27,13 +27,13 @@ impl Mutation {
     /// Adds a wishlist with a user_id, a list of product_variant_ids and a name.
     ///
     /// Formats UUIDs as hyphenated lowercase Strings.
-    async fn add_wishlist<'a>(
+    async fn create_wishlist<'a>(
         &self,
         ctx: &Context<'a>,
-        #[graphql(desc = "AddWishlistInput")] input: AddWishlistInput,
+        #[graphql(desc = "CreateWishlistInput")] input: CreateWishlistInput,
     ) -> Result<Wishlist> {
         authenticate_user(&ctx, input.user_id)?;
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         validate_input(db_client, &input).await?;
         let normalized_product_variants: HashSet<ProductVariant> = input
@@ -67,7 +67,7 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "UpdateWishlistInput")] input: UpdateWishlistInput,
     ) -> Result<Wishlist> {
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist = query_wishlist(&collection, input.id).await?;
         authenticate_user(&ctx, wishlist.user._id)?;
@@ -91,7 +91,7 @@ impl Mutation {
         ctx: &Context<'a>,
         #[graphql(desc = "UUID of wishlist to delete.")] id: Uuid,
     ) -> Result<bool> {
-        let db_client = ctx.data_unchecked::<Database>();
+        let db_client = ctx.data::<Database>()?;
         let collection: Collection<Wishlist> = db_client.collection::<Wishlist>("wishlists");
         let wishlist = query_wishlist(&collection, id).await?;
         authenticate_user(&ctx, wishlist.user._id)?;
@@ -173,7 +173,7 @@ async fn update_name(
 }
 
 /// Checks if product variants and user in AddWishlistInput are in the system (MongoDB database populated with events).
-async fn validate_input(db_client: &Database, input: &AddWishlistInput) -> Result<()> {
+async fn validate_input(db_client: &Database, input: &CreateWishlistInput) -> Result<()> {
     let product_variant_collection: Collection<ProductVariant> =
         db_client.collection::<ProductVariant>("product_variants");
     let user_collection: Collection<User> = db_client.collection::<User>("users");
