@@ -172,7 +172,7 @@ async fn update_name(
     Ok(())
 }
 
-/// Checks if product variants and user in AddWishlistInput are in the system (MongoDB database populated with events).
+/// Checks if product variants and user in CreateWishlistInput are in the system (MongoDB database populated with events).
 async fn validate_input(db_client: &Database, input: &CreateWishlistInput) -> Result<()> {
     let product_variant_collection: Collection<ProductVariant> =
         db_client.collection::<ProductVariant>("product_variants");
