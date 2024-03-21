@@ -1,8 +1,7 @@
 use std::{cmp::Ordering, collections::HashSet};
 
 use async_graphql::{
-    connection::{Edge, EmptyFields},
-    ComplexObject, OutputType, Result, SimpleObject,
+    ComplexObject, Result, SimpleObject,
 };
 use bson::datetime::DateTime;
 use bson::Uuid;
@@ -90,17 +89,5 @@ fn sort_product_variants(
 impl From<Wishlist> for Uuid {
     fn from(value: Wishlist) -> Self {
         value._id
-    }
-}
-
-pub struct NodeWrapper<Node>(pub Node);
-
-impl<Node> From<NodeWrapper<Node>> for Edge<uuid::Uuid, Node, EmptyFields>
-where
-    Node: Into<uuid::Uuid> + OutputType + Clone,
-{
-    fn from(value: NodeWrapper<Node>) -> Self {
-        let uuid = Into::<uuid::Uuid>::into(value.0.clone());
-        Edge::new(uuid, value.0)
     }
 }
